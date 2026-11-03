@@ -16,27 +16,25 @@ cd AprendeMas
 
 ```
 
-3. . **Crea la BD dentro de tu maquina local:** Genera la BD para recibir las tablas del proyecto.
+3. **Crea la BD dentro de tu maquina local:** Genera la BD para recibir las tablas del proyecto.
 
 ```bash
 createdb -U postgres aprende_mas
 
 ```
 
-4. . **Migración de la BD del script:**
+4. **Migración de la BD del script:**
 
 ```bash
 php artisan migrate
 
 ```
 
-
-   
-5. . **Ejecutar el servidor local:** Levanta el entorno de desarrollo integrado de PHP.
+5. **Ejecutar el servidor local:** Levanta el entorno de desarrollo integrado de PHP.
 
 ```bash
 php artisan serve
 
 ```
 
-4. **Acceder a la aplicación:** Abre tu navegador web e ingresa al dominio o dirección IP local que arroja la terminal (por defecto suele ser `http://localhost:8000`).
+6. **Acceder a la aplicación:** Abre tu navegador web e ingresa al dominio o dirección IP local que arroja la terminal (por defecto suele ser `http://localhost:8000`).
