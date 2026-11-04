@@ -2,11 +2,13 @@
 
 namespace App\Models;
 
-use Dom\ProcessingInstruction;
-use Illuminate\Database\Eloquent\Model;
+use Illuminate\Foundation\Auth\User as Authenticatable;
+use Illuminate\Notifications\Notifiable;
 
-class Usuario extends Model
+class Usuario extends Authenticatable
 {
+    use Notifiable;
+
     protected $table = 'usuario';
     protected $primaryKey = 'id_usuario';
     public $timestamps = false;
@@ -17,6 +19,11 @@ class Usuario extends Model
         'rol',
         'estado'
     ];
+
+    public function getAuthPasswordName()
+    {
+        return 'contrasena_hash';
+    }
 
     public function profesor(){
         return $this->hasMany(Profesor::class, 'id_usuario', 'id_usuario');
