@@ -47,7 +47,7 @@ php -v
 - **Windows (PowerShell como Administrador):**
 
 ```bash
-winget install --id PHP.PHP -e
+winget install --id PHP.PHP.8.4 -e
 ```
 
   (O usando Chocolatey: `choco install php --version=8.4.0 -y`).
