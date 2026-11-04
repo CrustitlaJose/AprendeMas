@@ -88,6 +88,7 @@ Para solucionar el error `Could not find driver` al conectar Laravel con Postgre
    ;extension=mbstring
 
    ; Para que quede exactamente así:
+   extension=openssl
    extension=pdo_pgsql
    extension=pgsql
    extension=fileinfo
