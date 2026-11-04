@@ -4,38 +4,35 @@
 
 ### Prerrequisitos del Sistema e Instalación de Herramientas
 
-Antes de clonar el proyecto, verifica que tienes las herramientas instaladas en tu computadora. Para cada una, primero comprueba si la tienes y, si no, instálala directamente desde tu terminal.
+Antes de clonar el proyecto, verifica que tienes las herramientas instaladas en tu computadora con **Windows**. Para cada una, primero comprueba si la tienes y, si no, instálala directamente desde tu terminal.
+
+> [!TIP]
+> Después de instalar cualquier herramienta con `winget`, **cierra y vuelve a abrir la terminal** para que Windows reconozca el nuevo comando.
 
 ### A. Git (Control de Versiones)
 
-**1. Verificar si está instalado.** Abre tu terminal (PowerShell, Command Prompt o Bash) y ejecuta:
+**1. Verificar si está instalado.** Abre tu terminal (PowerShell o Command Prompt) y ejecuta:
 
-```bash
+```powershell
 git --version
 ```
 
 - Si devuelve un número de versión (ej. `git version 2.40.0`), pasa al siguiente prerrequisito.
-- Si marca error o "comando no encontrado", instálalo con los comandos de abajo.
+- Si marca error o "no se reconoce el comando", instálalo con el comando de abajo.
 
 **2. Comandos de instalación:**
 
 - **Windows (PowerShell / CMD):**
 
-```bash
+```powershell
 winget install --id Git.Git -e --source winget
-```
-
-- **Linux (Ubuntu/Debian):**
-
-```bash
-sudo apt update && sudo apt install git -y
 ```
 
 ### B. PHP 8.4 y configuración de extensiones (php.ini)
 
 **1. Verificar si está instalado.** En la terminal, ejecuta:
 
-```bash
+```powershell
 php -v
 ```
 
@@ -46,35 +43,30 @@ php -v
 
 - **Windows (PowerShell como Administrador):**
 
-```bash
+```powershell
 winget install --id PHP.PHP.8.4 -e
 ```
 
   (O usando Chocolatey: `choco install php --version=8.4.0 -y`).
 
-- **Linux (Ubuntu/Debian vía PPA):**
-
-```bash
-sudo add-apt-repository ppa:ondrej/php -y
-sudo apt update
-sudo apt install php8.4 php8.4-cli php8.4-pgsql php8.4-xml php8.4-mbstring php8.4-curl -y
-```
-
-**3. Habilitar la extensión de PostgreSQL en php.ini (obligatorio).**
+**3. Habilitar las extensiones de PostgreSQL en php.ini (obligatorio).**
 
 Para solucionar el error `Could not find driver` al conectar Laravel con PostgreSQL, activa las extensiones en PHP:
 
 1. **Localiza la ruta de tu archivo php.ini.** Ejecuta en tu terminal:
 
-   ```bash
+   ```powershell
    php --ini
    ```
 
-   Busca la línea `Loaded Configuration File:` (ej. `C:\php\php.ini` o `/etc/php/8.4/cli/php.ini`).
+   Busca la línea `Loaded Configuration File:` (ej. `C:\php\php.ini`).
 
-2. **Edita el archivo php.ini.** Ábrelo con VS Code, Bloc de notas o Nano desde la terminal:
+   > [!NOTE]
+   > Si esa línea dice `(none)`, aún no existe un `php.ini`. Ve a la carpeta indicada en `Configuration File (php.ini) Path`, copia el archivo `php.ini-development` y renombra la copia como `php.ini`.
 
-   ```bash
+2. **Edita el archivo php.ini.** Ábrelo con VS Code o con el Bloc de notas:
+
+   ```powershell
    code C:\php\php.ini
    ```
 
@@ -98,11 +90,22 @@ Para solucionar el error `Could not find driver` al conectar Laravel con Postgre
 
 4. Guarda el archivo y cierra el editor.
 
+5. **Verifica que quedaron activas:**
+
+   ```powershell
+   php -m | findstr /i "pgsql openssl fileinfo mbstring"
+   ```
+
+   Deben aparecer `pdo_pgsql`, `pgsql`, `openssl`, `fileinfo` y `mbstring`.
+
 ### C. Composer (Gestor de Dependencias de PHP)
+
+> [!IMPORTANT]
+> En Windows **no usamos `winget` para instalar Composer**, debido a cambios frecuentes en su identificador en los repositorios. El método oficial mediante un script de PHP es directo y funciona siempre.
 
 **1. Verificar si está instalado.** Ejecuta en tu terminal:
 
-```bash
+```powershell
 composer --version
 ```
 
@@ -111,48 +114,36 @@ composer --version
 
 **2. Comandos de instalación:**
 
-- **Windows (PowerShell / CMD):**
+- **Windows (PowerShell / CMD):** ejecuta este bloque en tu terminal:
 
-```bash
-winget install --id Composer.Composer -e
+```powershell
+php -r "copy('https://getcomposer.org/installer', 'composer-setup.php');"
+php composer-setup.php
+php -r "unlink('composer-setup.php');"
 ```
 
-- **Linux / Mac:**
-
-```bash
-curl -sS https://getcomposer.org/installer | php
-sudo mv composer.phar /usr/local/bin/composer
-```
+Esto genera el archivo `composer.phar` en la carpeta donde ejecutaste los comandos. Con este método se usa `php composer.phar <comando>` en lugar de `composer`, por lo que el archivo debe estar dentro de la carpeta del proyecto (`AprendeMas`). Puedes ejecutar este bloque ya dentro de esa carpeta (después del Paso 2) o copiar ahí el archivo.
 
 ### D. PostgreSQL 16 (Motor de Base de Datos)
 
 **1. Verificar si está instalado.** Ejecuta en tu terminal:
 
-```bash
+```powershell
 psql --version
 ```
 
 - Si responde con `psql (PostgreSQL) 16.x`, el motor está listo.
-- Si no se reconoce el comando, instálalo desde la terminal.
+- Si no se reconoce el comando, instálalo desde la terminal (o revisa el Paso 6, por si está instalado pero fuera del PATH).
 
 **2. Comandos de instalación:**
 
 - **Windows (PowerShell como Administrador):**
 
-```bash
+```powershell
 winget install --id PostgreSQL.PostgreSQL.16 -e
 ```
 
-  > **Nota:** Durante la instalación interactiva de PostgreSQL en Windows, asigna una contraseña al usuario por defecto `postgres` y conserva el puerto `5432`.
-
-- **Linux (Ubuntu/Debian):**
-
-```bash
-sudo apt update
-sudo apt install postgresql postgresql-contrib -y
-sudo systemctl start postgresql
-sudo systemctl enable postgresql
-```
+  > **Nota:** Durante la instalación interactiva de PostgreSQL, asigna una contraseña fácil de recordar al usuario por defecto `postgres` (ej. `postgres`) y conserva el puerto `5432`.
 
 ---
 
@@ -164,38 +155,46 @@ Una vez instalados todos los prerrequisitos, sigue estos comandos en orden dentr
 
 Descarga el código fuente del repositorio en tu equipo:
 
-```bash
+```powershell
 git clone https://github.com/CrustitlaJose/AprendeMas.git
 ```
+
+✅ **Verificación:** se creará la carpeta `AprendeMas` en tu directorio actual.
 
 ### Paso 2: Entrar a la carpeta del proyecto
 
 Es indispensable ingresar a la subcarpeta antes de ejecutar comandos de Composer o Laravel:
 
-```bash
+```powershell
 cd AprendeMas
 ```
 
+✅ **Verificación:** tu terminal mostrará la ruta actual terminando en `\AprendeMas>`.
+
 ### Paso 3: Instalar dependencias de PHP y Laravel
 
-Descarga todas las librerías del framework especificadas en `composer.json`:
+Descarga todas las librerías del framework especificadas en `composer.json`. Si el comando global `composer` no se reconoce en tu terminal, utiliza el ejecutable local generado con PHP:
 
-```bash
-composer install
+```powershell
+php composer.phar install
 ```
+
+✅ **Verificación:** la terminal leerá el archivo `composer.json` y descargará todas las librerías, creando la carpeta `vendor`.
 
 ### Paso 4: Configurar variables de entorno y generar la clave
 
-Copia la plantilla `.env.example` para crear tu archivo `.env` local y genera la clave de cifrado:
+Copia la plantilla `.env.example` para crear tu archivo `.env` local y genera la clave de cifrado. En Windows se usa `copy` en lugar de `cp`:
 
-```bash
-cp .env.example .env
+```powershell
+copy .env.example .env
 php artisan key:generate
 ```
 
+✅ **Verificación:** el archivo `.env` aparecerá en la raíz del proyecto y la consola confirmará que la clave de la aplicación se generó correctamente.
+
 ### Paso 5: Configurar la conexión a PostgreSQL
 
-Abre el archivo `.env` recién creado en la raíz del proyecto y actualiza tus parámetros de acceso local:
+Abre el archivo `.env` recién creado en VS Code y actualiza tus parámetros de acceso local:
 
 ```env
 DB_CONNECTION=pgsql
@@ -206,28 +205,47 @@ DB_USERNAME=postgres
 DB_PASSWORD=tu_contraseña_local
 ```
 
+✅ **Verificación:** los datos coinciden con tu usuario y contraseña locales de PostgreSQL.
+
 ### Paso 6: Crear la base de datos en PostgreSQL
 
-Crea la base de datos `aprende_mas`:
+Crea la base de datos `aprende_mas`. Si tu terminal indica que `psql` no se reconoce como comando, apunta directamente a la ruta absoluta del ejecutable según tu consola:
 
-```bash
-psql -U postgres -c "CREATE DATABASE aprende_mas;"
+- **Si usas PowerShell:**
+
+```powershell
+& "C:\Program Files\PostgreSQL\16\bin\psql.exe" -U postgres -c "CREATE DATABASE aprende_mas;"
 ```
+
+- **Si usas CMD (Símbolo del sistema):**
+
+```bat
+"C:\Program Files\PostgreSQL\16\bin\psql.exe" -U postgres -c "CREATE DATABASE aprende_mas;"
+```
+
+(Introduce tu contraseña de PostgreSQL cuando te la solicite).
+
+✅ **Verificación:** la consola confirmará la creación de la base de datos `aprende_mas`.
 
 ### Paso 7: Ejecutar las migraciones y cargar los datos de prueba
 
 Construye las tablas normalizadas en 3FN e inserta el catálogo inicial de materias y usuarios de prueba:
 
-```bash
+```powershell
 php artisan migrate:fresh --seed
 ```
+
+> [!WARNING]
+> `migrate:fresh` elimina todas las tablas de la base de datos antes de recrearlas. Úsalo solo en tu entorno local.
+
+✅ **Verificación:** la terminal enlistará la creación exitosa de cada una de las tablas del sistema.
 
 ### Paso 8: Iniciar el servidor local
 
 Levanta el servidor web integrado de Laravel:
 
-```bash
+```powershell
 php artisan serve
 ```
 
-El sistema estará ejecutándose localmente en: <http://127.0.0.1:8000> (o <http://127.0.0.1:8001>).
+✅ **Verificación:** la terminal mostrará la URL local lista para abrirse en tu navegador: <http://127.0.0.1:8000> (o <http://127.0.0.1:8001> si el puerto 8000 está ocupado). Para detener el servidor, presiona `Ctrl + C`.
