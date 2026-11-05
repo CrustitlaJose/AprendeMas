@@ -1,1 +1,1 @@
-select * from materia;
+select * from coordinador;
