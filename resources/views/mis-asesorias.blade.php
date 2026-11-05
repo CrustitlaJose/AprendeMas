@@ -1,151 +1,158 @@
-<!DOCTYPE html>
-<html lang="es">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Mis Asesorías Agendadas - Aprende +</title>
-    <script src="https://cdn.tailwindcss.com"></script>
-</head>
-<body class="bg-[#F8F9FA] text-[#212529] font-sans">
+@extends('layouts.app')
 
-    <!-- Header institucional -->
-    <header class="bg-white border-b border-gray-200 px-8 py-4 flex justify-between items-center shadow-sm">
-        <div class="flex items-center space-x-2">
-            <span class="text-xl font-bold text-[#1F4E78]">Aprende +</span>
+@section('title', 'Agendar Asesoría')
+
+@section('content')
+<div class="max-w-5xl mx-auto">
+    
+    <!-- Títulos de sección -->
+    <div class="flex justify-between items-center mb-6">
+        <div>
+            <h1 class="text-2xl font-bold text-blue-900">Agendar asesoría</h1>
+            <p class="text-sm text-gray-600">Consulta la oferta académica y reserva un horario disponible.</p>
         </div>
-        <span class="text-sm text-gray-600">Portal del alumno</span>
-    </header>
+        <!-- Indicador visual del proceso -->
+        <div class="flex items-center space-x-2 text-xs font-semibold">
+            <span class="px-3 py-1 bg-blue-900 text-white rounded">1 Buscar</span>
+            <span class="px-3 py-1 bg-gray-200 text-gray-600 rounded">2 Seleccionar</span>
+            <span class="px-3 py-1 bg-gray-200 text-gray-600 rounded">3 Aceptar</span>
+        </div>
+    </div>
 
-    <main class="max-w-6xl mx-auto px-6 py-8">
-        <!-- Títulos de sección -->
-        <div class="flex justify-between items-center mb-6">
+    <!-- Módulo de Búsqueda (Filtros CU-06 / RF-07) -->
+    <div class="bg-white border border-gray-200 rounded-xl p-6 mb-8 shadow-sm">
+        <h3 class="font-bold text-gray-800 mb-4 text-sm">Filtros de búsqueda</h3>
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-4 items-end">
             <div>
-                <h1 class="text-2xl font-bold text-[#1F4E78]">Mis Asesorías Agendadas</h1>
-                <p class="text-sm text-gray-600">Consulta tus citas activas y solicita una cancelación cuando el plazo lo permita.</p>
+                <label class="block text-xs font-semibold text-gray-600 mb-1">Profesor</label>
+                <select class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-900">
+                    <option>Todos los profesores</option>
+                    <option>Calipso</option>
+                    <option>Claudia</option>
+                </select>
             </div>
-            <span class="text-xs text-gray-500 font-semibold tracking-wide uppercase">Citas agendadas</span>
-        </div>
-
-        <!-- Tarjeta de referencia temporal -->
-        <div class="bg-white border border-gray-200 rounded-lg p-4 mb-6 shadow-sm">
-            <div class="flex justify-between items-center text-sm">
-                <span class="font-medium text-gray-700">Fecha y hora de referencia: 23 oct 2026, 09:10 h</span>
-                <span class="text-gray-500 text-xs">Hora local del centro</span>
+            <div>
+                <label class="block text-xs font-semibold text-gray-600 mb-1">Materia</label>
+                <select class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-900">
+                    <option>Todas las materias</option>
+                    <option>Matemáticas</option>
+                    <option>Inglés</option>
+                    <option>Programación</option>
+                </select>
             </div>
-            <p class="text-xs text-gray-500 mt-1">Solo puedes cancelar con al menos 12 horas de anticipación al inicio de la asesoría.</p>
-        </div>
-
-        <!-- Alerta de éxito (Oculta por defecto, se puede mostrar al cancelar) -->
-        <div id="toast-success" class="hidden mb-6 p-4 bg-green-50 border border-green-200 text-green-800 rounded-lg text-sm flex items-center justify-between">
-            <span><strong>Cita cancelada correctamente. El cupo ha sido liberado.</strong> Física · Daniel Ruiz · 24 oct 2026 · 12:00–13:00 h · Aula C-102</span>
-        </div>
-
-        <!-- Tabla de citas activas -->
-        <div class="bg-white border border-gray-200 rounded-lg shadow-sm overflow-hidden">
-            <div class="px-6 py-4 border-b border-gray-200 flex justify-between items-center bg-gray-50">
-                <h3 class="font-bold text-gray-800">Citas activas</h3>
-                <span class="text-xs text-gray-500" id="contador-citas">3 citas agendadas</span>
-            </div>
-
-            <table class="w-full text-left border-collapse">
-                <thead>
-                    <tr class="border-b border-gray-200 text-xs text-gray-500 uppercase tracking-wider bg-gray-50/50">
-                        <th class="py-3 px-6">Materia</th>
-                        <th class="py-3 px-6">Profesor</th>
-                        <th class="py-3 px-6">Fecha</th>
-                        <th class="py-3 px-6">Hora</th>
-                        <th class="py-3 px-6">Aula</th>
-                        <th class="py-3 px-6">Tiempo restante</th>
-                        <th class="py-3 px-6 text-center">Acción</th>
-                    </tr>
-                </thead>
-                <tbody class="divide-y divide-gray-200 text-sm">
-                    <!-- Fila 1: Menos de 12 horas (Deshabilitada por RN-01) -->
-                    <tr class="bg-gray-50/60">
-                        <td class="py-4 px-6 font-semibold text-gray-900">
-                            Matemáticas
-                            <div class="text-xs text-red-600 font-normal mt-0.5">Fuera de plazo: No es posible cancelar con menos de 12 horas de anticipación</div>
-                        </td>
-                        <td class="py-4 px-6 text-gray-600">Laura Martínez</td>
-                        <td class="py-4 px-6 text-gray-600">23 oct 2026</td>
-                        <td class="py-4 px-6 text-gray-600">16:00–17:00 h</td>
-                        <td class="py-4 px-6 text-gray-600">B-204</td>
-                        <td class="py-4 px-6 text-gray-600 font-medium">6 h 50 min</td>
-                        <td class="py-4 px-6 text-center">
-                            <button disabled class="px-4 py-1.5 bg-gray-200 text-gray-400 rounded cursor-not-allowed text-xs font-semibold">Cancelar</button>
-                        </td>
-                    </tr>
-
-                    <!-- Fila 2: Válida para cancelar (>= 12 horas) -->
-                    <tr id="fila-fisica" class="hover:bg-gray-50 transition">
-                        <td class="py-4 px-6 font-semibold text-gray-900">Física</td>
-                        <td class="py-4 px-6 text-gray-600">Daniel Ruiz</td>
-                        <td class="py-4 px-6 text-gray-600">24 oct 2026</td>
-                        <td class="py-4 px-6 text-gray-600">12:00–13:00 h</td>
-                        <td class="py-4 px-6 text-gray-600">C-102</td>
-                        <td class="py-4 px-6 text-gray-600 font-medium">26 h 50 min</td>
-                        <td class="py-4 px-6 text-center">
-                            <button onclick="abrirModal()" class="px-4 py-1.5 border border-[#1F4E78] text-[#1F4E78] hover:bg-[#1F4E78] hover:text-white rounded text-xs font-semibold transition">Cancelar</button>
-                        </td>
-                    </tr>
-
-                    <!-- Fila 3: Válida para cancelar -->
-                    <tr class="hover:bg-gray-50 transition">
-                        <td class="py-4 px-6 font-semibold text-gray-900">Química</td>
-                        <td class="py-4 px-6 text-gray-600">Ana López</td>
-                        <td class="py-4 px-6 text-gray-600">26 oct 2026</td>
-                        <td class="py-4 px-6 text-gray-600">10:00–11:00 h</td>
-                        <td class="py-4 px-6 text-gray-600">A-101</td>
-                        <td class="py-4 px-6 text-gray-600 font-medium">72 h 50 min</td>
-                        <td class="py-4 px-6 text-center">
-                            <button class="px-4 py-1.5 border border-[#1F4E78] text-[#1F4E78] hover:bg-[#1F4E78] hover:text-white rounded text-xs font-semibold transition">Cancelar</button>
-                        </td>
-                    </tr>
-                </tbody>
-            </table>
-        </div>
-
-        <div class="mt-4 text-xs text-gray-500">
-            Las citas se mantienen activas hasta que confirmes su cancelación.
-        </div>
-    </main>
-
-    <!-- Modal de Confirmación de Cancelación -->
-    <div id="modal-cancelar" class="fixed inset-0 bg-black/50 hidden flex items-center justify-center z-50">
-        <div class="bg-white rounded-lg shadow-xl w-full max-w-md p-6 border border-gray-200">
-            <h3 class="text-lg font-bold text-gray-900 mb-2">¿Deseas cancelar la asesoría de Física?</h3>
-            <p class="text-xs text-gray-600 mb-4">Al confirmar, la cita dejará de estar activa y el cupo se liberará automáticamente.</p>
-            
-            <div class="bg-gray-50 p-4 rounded-lg text-xs space-y-1 mb-6 border border-gray-100">
-                <p class="font-bold text-gray-800">Física · Daniel Ruiz</p>
-                <p class="text-gray-600">24 oct 2026 · 12:00–13:00 h · Aula C-102</p>
-                <hr class="my-2 border-gray-200">
-                <p class="font-semibold text-gray-900">Faltan 26 h 50 min · Cumple el mínimo de 12 horas</p>
-                <p class="text-gray-500">Referencia: 23 oct 2026, 09:10 h · Hora local del centro</p>
-            </div>
-
-            <div class="flex justify-end space-x-3">
-                <button onclick="cerrarModal()" class="px-4 py-2 border border-gray-300 text-gray-700 hover:bg-gray-100 rounded text-xs font-semibold transition">Regresar</button>
-                <button onclick="confirmarCancelacion()" class="px-4 py-2 bg-[#1F4E78] hover:bg-blue-900 text-white rounded text-xs font-semibold transition">Sí, cancelar</button>
+            <div>
+                <button class="w-full bg-blue-900 hover:bg-blue-800 text-white font-semibold py-2 px-4 rounded-lg text-sm transition shadow-sm">
+                    Buscar Disponibilidad
+                </button>
             </div>
         </div>
     </div>
 
-    <!-- Script de interactividad básica para simular la regla del prototipo -->
-    <script>
-        function abrirModal() {
-            document.getElementById('modal-cancelar').classList.remove('hidden');
-        }
-        function cerrarModal() {
-            document.getElementById('modal-cancelar').classList.add('hidden');
-        }
-        function confirmarCancelacion() {
-            cerrarModal();
-            // Oculta la fila de física y muestra la alerta de éxito
-            document.getElementById('fila-fisica').style.display = 'none';
-            document.getElementById('toast-success').classList.remove('hidden');
-            document.getElementById('contador-citas').innerText = '2 citas agendadas';
-        }
-    </script>
-</body>
-</html>
+    <!-- Resultados: Horarios Disponibles (Tarjetas / Cards) -->
+    <div class="mb-4 flex justify-between items-center">
+        <h3 class="font-bold text-gray-800 text-base">Horarios ofertados</h3>
+        <span class="text-xs text-gray-500 font-medium">Mostrando bloques activos</span>
+    </div>
+
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+        <!-- Tarjeta 1 -->
+        <div class="bg-white border border-gray-200 rounded-xl p-5 shadow-sm flex flex-col justify-between hover:shadow-md transition">
+            <div>
+                <div class="flex justify-between items-start mb-2">
+                    <h4 class="font-bold text-gray-900 text-base">Programación</h4>
+                    <span class="text-xs bg-green-50 text-green-700 px-2.5 py-1 rounded-full font-semibold">Disponible</span>
+                </div>
+                <p class="text-xs text-gray-600 mb-4">Prof. Calipso</p>
+                <div class="text-xs text-gray-500 space-y-1.5 mb-6 bg-gray-50 p-3 rounded-lg">
+                    <p>📅 Lunes</p>
+                    <p class="font-medium text-gray-800">⏰ 07:00 a 09:00 hrs</p>
+                    <p>📍 Aula: <span class="font-semibold text-blue-900">XA</span></p>
+                </div>
+            </div>
+            <button onclick="simularReserva()" class="w-full bg-blue-900 hover:bg-blue-800 text-white font-semibold py-2 rounded-lg text-xs transition shadow-sm">
+                Seleccionar y Agendar
+            </button>
+        </div>
+
+        <!-- Tarjeta 2 -->
+        <div class="bg-white border border-gray-200 rounded-xl p-5 shadow-sm flex flex-col justify-between hover:shadow-md transition">
+            <div>
+                <div class="flex justify-between items-start mb-2">
+                    <h4 class="font-bold text-gray-900 text-base">Matemáticas</h4>
+                    <span class="text-xs bg-green-50 text-green-700 px-2.5 py-1 rounded-full font-semibold">Disponible</span>
+                </div>
+                <p class="text-xs text-gray-600 mb-4">Prof. Claudia</p>
+                <div class="text-xs text-gray-500 space-y-1.5 mb-6 bg-gray-50 p-3 rounded-lg">
+                    <p>📅 Miércoles</p>
+                    <p class="font-medium text-gray-800">⏰ 10:00 a 12:00 hrs</p>
+                    <p>📍 Aula: <span class="font-semibold text-blue-900">CC1</span></p>
+                </div>
+            </div>
+            <button onclick="simularReserva()" class="w-full bg-blue-900 hover:bg-blue-800 text-white font-semibold py-2 rounded-lg text-xs transition shadow-sm">
+                Seleccionar y Agendar
+            </button>
+        </div>
+
+        <!-- Tarjeta 3 -->
+        <div class="bg-white border border-gray-200 rounded-xl p-5 shadow-sm flex flex-col justify-between hover:shadow-md transition">
+            <div>
+                <div class="flex justify-between items-start mb-2">
+                    <h4 class="font-bold text-gray-900 text-base">Inglés</h4>
+                    <span class="text-xs bg-green-50 text-green-700 px-2.5 py-1 rounded-full font-semibold">Disponible</span>
+                </div>
+                <p class="text-xs text-gray-600 mb-4">Prof. Calipso</p>
+                <div class="text-xs text-gray-500 space-y-1.5 mb-6 bg-gray-50 p-3 rounded-lg">
+                    <p>📅 Jueves</p>
+                    <p class="font-medium text-gray-800">⏰ 12:00 a 14:00 hrs</p>
+                    <p>📍 Aula: <span class="font-semibold text-blue-900">B-102</span></p>
+                </div>
+            </div>
+            <button onclick="simularReserva()" class="w-full bg-blue-900 hover:bg-blue-800 text-white font-semibold py-2 rounded-lg text-xs transition shadow-sm">
+                Seleccionar y Agendar
+            </button>
+        </div>
+    </div>
+
+</div>
+
+<!-- Modal de Reserva Confirmada -->
+<div id="modal-confirmacion" class="fixed inset-0 bg-black/50 hidden flex items-center justify-center z-50 p-4">
+    <div class="bg-white rounded-xl shadow-2xl w-full max-w-md p-6 border border-gray-100">
+        <div class="flex items-center space-x-2 text-green-600 mb-3">
+            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>
+            <span class="font-bold text-sm">Validación de aula y cupo exitosa</span>
+        </div>
+        <h3 class="text-lg font-bold text-gray-900 mb-1">¡Asesoría Agendada!</h3>
+        <p class="text-xs text-gray-500 mb-4">El sistema validó que el espacio físico está libre. Este es tu acuse de reserva.</p>
+        
+        <div class="bg-gray-50 border border-gray-200 rounded-lg p-4 text-xs space-y-2 mb-6">
+            <div class="flex justify-between items-center border-b border-gray-200 pb-2">
+                <span class="font-bold text-gray-700">Folio: AP-20261104-019</span>
+                <span class="px-2 py-0.5 bg-green-100 text-green-800 rounded font-semibold text-[10px]">Activa</span>
+            </div>
+            <div class="grid grid-cols-2 gap-2 pt-1 text-gray-600">
+                <p><span class="text-gray-400">Alumno:</span> Angel Flores</p>
+                <p><span class="text-gray-400">Control:</span> 23090935</p>
+                <p><span class="text-gray-400">Aula Asignada:</span> XA</p>
+                <p><span class="text-gray-400">Estado:</span> Confirmada</p>
+            </div>
+        </div>
+
+        <div class="flex justify-end space-x-3">
+            <button onclick="cerrarModal()" class="px-4 py-2 bg-blue-900 hover:bg-blue-800 text-white rounded-lg text-xs font-semibold transition shadow-sm">
+                Entendido
+            </button>
+        </div>
+    </div>
+</div>
+
+<script>
+    function simularReserva() {
+        document.getElementById('modal-confirmacion').classList.remove('hidden');
+    }
+    function cerrarModal() {
+        document.getElementById('modal-confirmacion').classList.add('hidden');
+        window.location.href = "{{ route('mis-asesorias') }}";
+    }
+</script>
+@endsection
