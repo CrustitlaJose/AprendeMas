@@ -1,13 +1,25 @@
 <?php
 
 use Illuminate\Support\Facades\Route;
+use App\Http\Controllers\AlumnoController;
 use App\Http\Controllers\AuthController;
+use App\Http\Controllers\CoordinadorAlumnoController;
+use App\Models\Materia;
 
 Route::get('/', function () {
     return redirect('/login');
 });
 
 // Mostrar el formulario de login (Frontend directo)
+/*
+Route::get('/test-db', function () {
+    return Materia::all();
+});
+*/
+Route::get('/', function () {
+    return view('/login');
+});
+
 Route::get('/login', function () {
     return view('login');
 })->name('login');
@@ -30,3 +42,10 @@ Route::get('/test-agendar', function () {
 Route::get('/test-coordinador', function () {
     return view('coordinador.alumnos');
 });
+Route::post('/login', [AuthController::class, 'login']);
+
+Route::post('/coordinador/alumnos', [CoordinadorAlumnoController::class, 'store'])
+    ->middleware('auth')
+    ->name('coordinador.alumnos.store');
+
+Route::get('/alumnos', [AlumnoController::class, 'index'])->middleware('auth')->name('alumnos.get');

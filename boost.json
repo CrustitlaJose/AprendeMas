@@ -1,7 +1,11 @@
 {
     "agents": [
+<<<<<<< HEAD
         "claude_code",
         "copilot"
+=======
+        "claude_code"
+>>>>>>> 3a83307b643ef24a6bdab9fe8c7acc0cf6a14c6d
     ],
     "cloud": true,
     "guidelines": true,

@@ -2,57 +2,83 @@
 
 namespace App\Http\Controllers;
 
-use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Auth;
 use App\Models\Alumno;
 use App\Models\Profesor;
+use App\Models\Usuario;
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
 
 class AuthController extends Controller
 {
     public function login(Request $request)
     {
+        // Validar parámetros de entrada
         $request->validate([
-            'identificador' => ['required'], 
+            'identificador' => ['required'],
             'password' => ['required'],
         ]);
 
         $identificador = $request->input('identificador');
         $credenciales = ['password' => $request->input('password')];
 
+        // Identificar el tipo de credencial enviada
         if (filter_var($identificador, FILTER_VALIDATE_EMAIL)) {
+            // Autenticación por correo electrónico (aplica para Alumno, Profesor y Coordinador)
             $credenciales['correo'] = $identificador;
         } else {
+            // Búsqueda por identificadores específicos (solo Alumno y Profesor)
             $alumno = Alumno::where('matricula', $identificador)->first();
-            
+
             if ($alumno) {
                 $credenciales['id_usuario'] = $alumno->id_usuario;
             } else {
                 $profesor = Profesor::where('num_empleado', $identificador)->first();
+
                 if ($profesor) {
                     $credenciales['id_usuario'] = $profesor->id_usuario;
                 } else {
-                    return response()->json(['message' => 'El usuario no existe.'], 404);
+                    return response()->json(['message' => 'El usuario no existe o el identificador es inválido.'], 404);
                 }
             }
         }
 
+        // Intento de autenticación en la BD
         if (Auth::attempt($credenciales)) {
             $request->session()->regenerate();
+            /** @var Usuario $usuario */
             $usuario = Auth::user();
 
             if ($usuario->estado === 'Inactivo') {
                 Auth::logout();
+
                 return response()->json(['message' => 'La cuenta está inactiva.'], 403);
             }
 
+            // Cargar datos específicos del perfil según el rol
+            match ($usuario->rol) {
+                'Alumno' => $usuario->load('alumno'),
+                'Profesor' => $usuario->load('profesor'),
+                'Coordinador' => $usuario->load('coordinador'),
+                default => null,
+            };
+
             return response()->json([
                 'message' => 'Autenticación exitosa',
-                'usuario' => $usuario
+                'usuario' => $usuario,
             ], 200);
         }
 
         return response()->json([
-            'message' => 'Las credenciales son incorrectas.'
+            'message' => 'Las credenciales son incorrectas.',
         ], 401);
+    }
+
+    public function logout(Request $request)
+    {
+        Auth::logout();
+        $request->session()->invalidate();
+        $request->session()->regenerateToken();
+
+        return response()->json(['message' => 'Sesión cerrada correctamente.'], 200);
     }
 }

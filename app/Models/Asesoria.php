@@ -45,4 +45,9 @@ class Asesoria extends Model
     {
         return $this->hasMany(Notificacion::class, 'id_asesoria', 'id_asesoria');
     }
+
+    public function cancelacion()
+    {
+        return $this->hasOne(Cancelacion::class);
+    }
 }
