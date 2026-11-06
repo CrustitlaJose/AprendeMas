@@ -4,67 +4,94 @@ namespace App\Http\Controllers;
 
 use App\Models\Alumno;
 use App\Models\Usuario;
-use Illuminate\Http\JsonResponse;
-use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
-use Illuminate\Support\Str;
 
 class CoordinadorAlumnoController extends Controller
 {
-    // Registrar un nuevo alumno desde la administración
-    public function store(Request $request): JsonResponse|RedirectResponse
+    // CU-12: Consultar todos los alumnos
+    public function index()
     {
-        abort_unless($request->user()?->rol === 'Coordinador', 403);
+        $alumnos = Alumno::with('usuario')->get();
+        return response()->json($alumnos, 200);
+    }
 
-        $validated = $request->validate([
-            'correo' => ['required', 'email', 'max:255', 'unique:usuario,correo'],
-            'matricula' => ['required', 'string', 'max:255', 'unique:alumno,matricula'],
-            'nombre' => ['required', 'string', 'max:255'],
-            'apellidos' => ['required', 'string', 'max:255'],
-            'telefono' => ['required', 'string', 'max:255', 'unique:alumno,telefono'],
+    // CU-10: Dar de alta un nuevo alumno
+    public function store(Request $request)
+    {
+        $request->validate([
+            'correo' => 'required|email|unique:usuario,correo',
+            'password' => 'required|min:6',
+            'matricula' => 'required|unique:alumno,matricula',
+            'nombre' => 'required|string',
+            'apellidos' => 'required|string',
+            'telefono' => 'nullable|string'
         ]);
 
-        $contrasenaTemporal = Str::random(32);
+        try {
+            DB::transaction(function () use ($request) {
+                // 1. Crear credenciales genéricas en tabla usuario
+                $usuario = Usuario::create([
+                    'correo' => $request->correo,
+                    'contrasena_hash' => Hash::make($request->password),
+                    'rol' => 'Alumno',
+                    'estado' => 'Activo'
+                ]);
 
-        $alumno = DB::transaction(function () use ($validated, $contrasenaTemporal): Alumno {
-            $usuario = new Usuario;
-            $usuario->correo = $validated['correo'];
-            $usuario->contrasena_hash = Hash::make($contrasenaTemporal);
-            $usuario->rol = 'Alumno';
-            $usuario->estado = 'Activo';
-            $usuario->save();
+                // 2. Crear expediente específico en tabla alumno
+                Alumno::create([
+                    'id_usuario' => $usuario->id_usuario,
+                    'matricula' => $request->matricula,
+                    'nombre' => $request->nombre,
+                    'apellidos' => $request->apellidos,
+                    'telefono' => $request->telefono
+                ]);
+            });
 
-            $alumno = new Alumno;
-            $alumno->id_usuario = $usuario->id_usuario;
-            $alumno->matricula = $validated['matricula'];
-            $alumno->nombre = $validated['nombre'];
-            $alumno->apellidos = $validated['apellidos'];
-            $alumno->telefono = $validated['telefono'];
-            $alumno->estado = 'Activo';
-            $alumno->save();
-
-            return $alumno;
-        });
-
-        $response = [
-            'message' => 'Alumno registrado correctamente.',
-            'alumno' => [
-                'id_alumno' => $alumno->id_alumno,
-                'matricula' => $alumno->matricula,
-                'nombre' => $alumno->nombre,
-                'apellidos' => $alumno->apellidos,
-                'telefono' => $alumno->telefono,
-                'correo' => $validated['correo'],
-            ],
-            'contrasena_temporal' => $contrasenaTemporal,
-        ];
-
-        if ($request->expectsJson()) {
-            return response()->json($response, 201);
+            return response()->json(['message' => 'Alumno registrado exitosamente.'], 201);
+        } catch (\Exception $e) {
+            return response()->json(['message' => 'Error al registrar alumno.', 'error' => $e->getMessage()], 500);
         }
+    }
 
-        return redirect()->route('coordinador');
+    // CU-13: Modificar información de alumnado
+    public function update(Request $request, $id)
+    {
+        $alumno = Alumno::findOrFail($id);
+
+        $request->validate([
+            'nombre' => 'string',
+            'apellidos' => 'string',
+            'telefono' => 'nullable|string',
+            'correo' => 'email|unique:usuario,correo,' . $alumno->id_usuario . ',id_usuario',
+        ]);
+
+        try {
+            DB::transaction(function () use ($request, $alumno) {
+                // Actualizar datos de Alumno
+                $alumno->update($request->only(['nombre', 'apellidos', 'telefono']));
+
+                // Actualizar correo en Usuario si se envió en la petición
+                if ($request->has('correo')) {
+                    $alumno->usuario()->update(['correo' => $request->correo]);
+                }
+            });
+
+            return response()->json(['message' => 'Expediente actualizado.'], 200);
+        } catch (\Exception $e) {
+            return response()->json(['message' => 'Error al actualizar.', 'error' => $e->getMessage()], 500);
+        }
+    }
+
+    // CU-11: Dar de baja alumno (Baja lógica)
+    public function destroy($id)
+    {
+        $alumno = Alumno::findOrFail($id);
+        
+        // Se desactiva la cuenta del usuario para impedir el login, sin borrar la tabla 'alumno'
+        $alumno->usuario()->update(['estado' => 'Inactivo']);
+
+        return response()->json(['message' => 'Baja lógica aplicada correctamente.'], 200);
     }
 }
