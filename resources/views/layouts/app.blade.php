@@ -19,7 +19,7 @@
                 <a href="#" class="hover:text-blue-300 transition">Agendar</a>
                 
                 <div class="border-l border-blue-700 pl-6 flex items-center">
-                    <span class="mr-4 text-sm font-medium">Angel Flores Gutierrez</span>
+                    <span class="mr-4 text-sm font-medium">{{ auth()->user()?->coordinador?->first()?->nombre ?? auth()->user()?->correo }}</span>
                     <form action="{{ route('logout') }}" method="POST">
                         @csrf
                         <button type="submit" class="bg-red-500 hover:bg-red-600 px-4 py-2 rounded-md text-sm font-bold transition">

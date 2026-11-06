@@ -95,4 +95,31 @@ class CoordinadorAlumnoControllerTest extends TestCase
         $this->assertNotSame($contrasenaTemporal, $usuarioCreado->contrasena_hash);
         $this->assertTrue(Hash::check($contrasenaTemporal, $usuarioCreado->contrasena_hash));
     }
+
+    public function test_redirects_to_coordinator_view_after_registering_student(): void
+    {
+        $coordinador = Usuario::create([
+            'correo' => 'coordinador@example.com',
+            'contrasena_hash' => Hash::make('password'),
+            'rol' => 'Coordinador',
+            'estado' => 'Activo',
+        ]);
+
+        $response = $this->actingAs($coordinador)
+            ->post('/coordinador/alumnos', [
+                'correo' => 'nuevo@example.com',
+                'matricula' => 'A00123456',
+                'nombre' => 'Ana',
+                'apellidos' => 'Pérez López',
+                'telefono' => '5551234567',
+            ]);
+
+        $response->assertRedirect(route('coordinador'));
+
+        $this->assertDatabaseHas('alumno', [
+            'matricula' => 'A00123456',
+            'nombre' => 'Ana',
+            'apellidos' => 'Pérez López',
+        ]);
+    }
 }
