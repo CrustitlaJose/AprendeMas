@@ -51,30 +51,23 @@
                     </tr>
                 </thead>
                 <tbody class="divide-y divide-gray-200 text-gray-700">
-                    <!-- Fila de ejemplo 1 -->
-                    <tr class="hover:bg-gray-50 transition">
-                        <td class="py-4 px-6 font-medium text-gray-900">23090935</td>
-                        <td class="py-4 px-6">Angel Flores Gutierrez</td>
-                        <td class="py-4 px-6">
-                            <span class="px-2 py-1 bg-green-50 text-green-700 rounded text-xs font-semibold">Activo</span>
-                        </td>
-                        <td class="py-4 px-6 text-center space-x-2">
-                            <button onclick="abrirModalEditar()" class="text-blue-600 hover:text-blue-800 font-semibold text-xs bg-blue-50 hover:bg-blue-100 px-3 py-1.5 rounded transition">Editar (CU-13)</button>
-                            <button onclick="abrirModalBaja()" class="text-red-600 hover:text-red-800 font-semibold text-xs bg-red-50 hover:bg-red-100 px-3 py-1.5 rounded transition">Baja Lógica (CU-11)</button>
-                        </td>
-                    </tr>
-                    <!-- Fila de ejemplo 2 -->
-                    <tr class="hover:bg-gray-50 transition">
-                        <td class="py-4 px-6 font-medium text-gray-900">23090102</td>
-                        <td class="py-4 px-6">José Crustitla García</td>
-                        <td class="py-4 px-6">
-                            <span class="px-2 py-1 bg-green-50 text-green-700 rounded text-xs font-semibold">Activo</span>
-                        </td>
-                        <td class="py-4 px-6 text-center space-x-2">
-                            <button onclick="abrirModalEditar()" class="text-blue-600 hover:text-blue-800 font-semibold text-xs bg-blue-50 hover:bg-blue-100 px-3 py-1.5 rounded transition">Editar (CU-13)</button>
-                            <button onclick="abrirModalBaja()" class="text-red-600 hover:text-red-800 font-semibold text-xs bg-red-50 hover:bg-red-100 px-3 py-1.5 rounded transition">Baja Lógica (CU-11)</button>
-                        </td>
-                    </tr>
+                    @forelse ($alumnos as $alumno)
+                        <tr class="hover:bg-gray-50 transition">
+                            <td class="py-4 px-6 font-medium text-gray-900">{{ $alumno->matricula }}</td>
+                            <td class="py-4 px-6">{{ $alumno->nombre }} {{ $alumno->apellidos }}</td>
+                            <td class="py-4 px-6">
+                                <span class="px-2 py-1 bg-green-50 text-green-700 rounded text-xs font-semibold">{{ $alumno->estado }}</span>
+                            </td>
+                            <td class="py-4 px-6 text-center space-x-2">
+                                <button onclick="abrirModalEditar()" class="text-blue-600 hover:text-blue-800 font-semibold text-xs bg-blue-50 hover:bg-blue-100 px-3 py-1.5 rounded transition">Editar (CU-13)</button>
+                                <button onclick="abrirModalBaja()" class="text-red-600 hover:text-red-800 font-semibold text-xs bg-red-50 hover:bg-red-100 px-3 py-1.5 rounded transition">Baja Lógica (CU-11)</button>
+                            </td>
+                        </tr>
+                    @empty
+                        <tr>
+                            <td colspan="4" class="py-6 px-6 text-center text-gray-500">No hay alumnos registrados.</td>
+                        </tr>
+                    @endforelse
                 </tbody>
             </table>
         </div>
@@ -87,18 +80,31 @@
         <h3 class="text-lg font-bold text-gray-900 mb-1">Registrar Nuevo Alumno (CU-10)</h3>
         <p class="text-xs text-gray-500 mb-4">Ingresa los datos generales del estudiante correspondientes a la tabla alumno.</p>
         
-        <form class="space-y-4 text-xs">
+        <form action="{{ route('coordinador.alumnos.store') }}" method="POST" class="space-y-4 text-xs">
+            @csrf
             <div>
                 <label class="block font-semibold text-gray-700 mb-1">Número de Control / Matrícula</label>
-                <input type="text" placeholder="Ej. 23090999" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#1F4E78] focus:outline-none">
+                <input type="text" name="matricula" value="{{ old('matricula') }}" required placeholder="Ej. 23090999" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#1F4E78] focus:outline-none">
             </div>
             <div>
-                <label class="block font-semibold text-gray-700 mb-1">Nombre Completo</label>
-                <input type="text" placeholder="Nombre(s) y Apellidos" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#1F4E78] focus:outline-none">
+                <label class="block font-semibold text-gray-700 mb-1">Nombre(s)</label>
+                <input type="text" name="nombre" value="{{ old('nombre') }}" required class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#1F4E78] focus:outline-none">
+            </div>
+            <div>
+                <label class="block font-semibold text-gray-700 mb-1">Apellidos</label>
+                <input type="text" name="apellidos" value="{{ old('apellidos') }}" required class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#1F4E78] focus:outline-none">
+            </div>
+            <div>
+                <label class="block font-semibold text-gray-700 mb-1">Correo electrónico</label>
+                <input type="email" name="correo" value="{{ old('correo') }}" required class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#1F4E78] focus:outline-none">
+            </div>
+            <div>
+                <label class="block font-semibold text-gray-700 mb-1">Teléfono</label>
+                <input type="tel" name="telefono" value="{{ old('telefono') }}" required class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#1F4E78] focus:outline-none">
             </div>
             <div class="flex justify-end space-x-3 pt-2">
                 <button type="button" onclick="cerrarModalAlta()" class="px-4 py-2 border border-gray-300 text-gray-700 rounded-lg font-semibold hover:bg-gray-50 transition">Cancelar</button>
-                <button type="button" onclick="cerrarModalAlta()" class="px-4 py-2 bg-[#1F4E78] text-white rounded-lg font-semibold hover:bg-blue-900 transition shadow-sm">Guardar Alumno</button>
+                <button type="submit" class="px-4 py-2 bg-[#1F4E78] text-white rounded-lg font-semibold hover:bg-blue-900 transition shadow-sm">Guardar Alumno</button>
             </div>
         </form>
     </div>

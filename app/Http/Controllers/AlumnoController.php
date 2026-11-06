@@ -3,17 +3,17 @@
 namespace App\Http\Controllers;
 
 use App\Models\Alumno;
-use Illuminate\Http\JsonResponse;
+use Illuminate\Contracts\View\View;
+use Illuminate\Http\Request;
 
 class AlumnoController extends Controller
 {
-    // Obtener la lista completa de alumnos en el sistema
-    public function index(): JsonResponse
+    public function index(Request $request): View
     {
-        abort_unless(request()->user()?->rol === 'Coordinador', 403);
+        abort_unless($request->user()?->rol === 'Coordinador', 403);
 
         $alumnos = Alumno::with('usuario')->get();
 
-        return response()->json($alumnos);
+        return view('Coordinador.alumnos', compact('alumnos'));
     }
 }

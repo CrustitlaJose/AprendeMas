@@ -54,18 +54,9 @@ class AuthController extends Controller
                 return response()->json(['message' => 'La cuenta está inactiva.'], 403);
             }
 
-            // Cargar datos específicos del perfil según el rol
-            match ($usuario->rol) {
-                'Alumno' => $usuario->load('alumno'),
-                'Profesor' => $usuario->load('profesor'),
-                'Coordinador' => $usuario->load('coordinador'),
-                default => null,
-            };
-
-            return response()->json([
-                'message' => 'Autenticación exitosa',
-                'usuario' => $usuario,
-            ], 200);
+            return redirect()->route(
+                $usuario->rol === 'Coordinador' ? 'coordinador' : 'mis-asesorias'
+            );
         }
 
         return response()->json([
