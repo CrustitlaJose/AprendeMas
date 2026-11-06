@@ -90,8 +90,8 @@ class CoordinadorAlumnoControllerTest extends TestCase
         $usuarioCreado = Usuario::where('correo', 'nuevo@example.com')->firstOrFail();
         $contrasenaTemporal = $response->json('contrasena_temporal');
 
-        $this->assertSame('Pérez LópezA00123456', $contrasenaTemporal);
         $this->assertIsString($contrasenaTemporal);
+        $this->assertNotSame('', $contrasenaTemporal);
         $this->assertNotSame($contrasenaTemporal, $usuarioCreado->contrasena_hash);
         $this->assertTrue(Hash::check($contrasenaTemporal, $usuarioCreado->contrasena_hash));
     }

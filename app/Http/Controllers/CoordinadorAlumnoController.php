@@ -8,6 +8,7 @@ use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Str;
 
 class CoordinadorAlumnoController extends Controller
 {
@@ -24,7 +25,7 @@ class CoordinadorAlumnoController extends Controller
             'telefono' => ['required', 'string', 'max:255', 'unique:alumno,telefono'],
         ]);
 
-        $contrasenaTemporal = hex2bin(random_bytes(16));
+        $contrasenaTemporal = Str::random(32);
 
         $alumno = DB::transaction(function () use ($validated, $contrasenaTemporal): Alumno {
             $usuario = new Usuario;
