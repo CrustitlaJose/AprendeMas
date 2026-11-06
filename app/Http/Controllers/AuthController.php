@@ -5,8 +5,11 @@ namespace App\Http\Controllers;
 use App\Models\Alumno;
 use App\Models\Profesor;
 use App\Models\Usuario;
+use Illuminate\Http\JsonResponse;
+use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Password;
 
 class AuthController extends Controller
 {
@@ -64,12 +67,29 @@ class AuthController extends Controller
         ], 401);
     }
 
-    public function logout(Request $request)
+    public function logout(Request $request): JsonResponse|RedirectResponse
     {
         Auth::logout();
         $request->session()->invalidate();
         $request->session()->regenerateToken();
 
-        return response()->json(['message' => 'Sesión cerrada correctamente.'], 200);
+        if ($request->expectsJson()) {
+            return response()->json(['message' => 'Sesión cerrada correctamente.'], 200);
+        }
+
+        return redirect()->route('login');
+    }
+
+    public function sendPasswordResetLink(Request $request): JsonResponse
+    {
+        $validated = $request->validate([
+            'correo' => ['required', 'email', 'max:255'],
+        ]);
+
+        Password::sendResetLink(['correo' => $validated['correo']]);
+
+        return response()->json([
+            'message' => 'Si el correo está registrado, recibirás un enlace para restablecer tu contraseña.',
+        ], 202);
     }
 }

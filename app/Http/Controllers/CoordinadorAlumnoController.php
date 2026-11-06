@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\Alumno;
 use App\Models\Usuario;
 use Illuminate\Http\JsonResponse;
+use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
@@ -13,7 +14,7 @@ use Illuminate\Support\Str;
 class CoordinadorAlumnoController extends Controller
 {
     // Registrar un nuevo alumno desde la administración
-    public function store(Request $request): JsonResponse
+    public function store(Request $request): JsonResponse|RedirectResponse
     {
         abort_unless($request->user()?->rol === 'Coordinador', 403);
 
@@ -47,7 +48,7 @@ class CoordinadorAlumnoController extends Controller
             return $alumno;
         });
 
-        return response()->json([
+        $response = [
             'message' => 'Alumno registrado correctamente.',
             'alumno' => [
                 'id_alumno' => $alumno->id_alumno,
@@ -58,6 +59,12 @@ class CoordinadorAlumnoController extends Controller
                 'correo' => $validated['correo'],
             ],
             'contrasena_temporal' => $contrasenaTemporal,
-        ], 201);
+        ];
+
+        if ($request->expectsJson()) {
+            return response()->json($response, 201);
+        }
+
+        return redirect()->route('coordinador');
     }
 }
