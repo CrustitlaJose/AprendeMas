@@ -3,49 +3,72 @@
 use App\Http\Controllers\AlumnoController;
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\CoordinadorAlumnoController;
+use App\Http\Controllers\CoordinadorProfesorController;
 use App\Http\Controllers\DisponibilidadController;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 
+/*
+|--------------------------------------------------------------------------
+| Middleware para rol de coordinador
+|--------------------------------------------------------------------------
+*/
+Route::middleware(['auth', 'role:Coordinador'])
+    ->prefix('coordinador')
+    ->name('coordinador.')
+    ->group(function () {
+        
+        // Todo este CRUD ahora es impenetrable para Alumnos o Profesores
+        Route::apiResource('alumnos', CoordinadorAlumnoController::class);
+        Route::apiResource('profesores', CoordinadorProfesorController::class);
+        
+});
+
+/*
+|--------------------------------------------------------------------------
+| Rutas Base y Vistas Públicas
+|--------------------------------------------------------------------------
+*/
 Route::get('/', function (Request $request) {
     return redirect()->route(
         $request->user()->rol === 'Coordinador' ? 'coordinador' : 'mis-asesorias'
     );
 })->middleware('auth')->name('home');
 
+
+
 Route::get('/login', function () {
     return view('login');
 })->middleware('guest')->name('login');
 
-// Procesar el login
+/*
+|--------------------------------------------------------------------------
+| Procesamiento de Autenticación
+|--------------------------------------------------------------------------
+*/
 Route::post('/login', [AuthController::class, 'login'])
-    ->middleware('guest')
-    ->name('login.post');
+    ->middleware('guest')->name('login.post');
 
 Route::post('/forgot-password', [AuthController::class, 'sendPasswordResetLink'])
-    ->middleware(['guest', 'throttle:6,1'])
-    ->name('password.email');
+    ->middleware(['guest', 'throttle:6,1'])->name('password.email');
 
-// Cerrar sesión
 Route::post('/logout', [AuthController::class, 'logout'])
-    ->middleware('auth')
-    ->name('logout');
+    ->middleware('auth')->name('logout');
 
+/*
+|--------------------------------------------------------------------------
+| Rutas Protegidas (Requieren Sesión Iniciada)
+|--------------------------------------------------------------------------
+*/
 Route::middleware('auth')->group(function () {
+
+    // --- Vistas y Paneles Generales ---
     Route::get('/mis-asesorias', function () {
         return view('mis-asesorias');
     })->name('mis-asesorias');
 
+    // --- Módulo Disponibilidad (Profesor) ---
     Route::get('/disponibilidades', [DisponibilidadController::class, 'index'])
         ->name('disponibilidades.index');
 
-    Route::get('/coordinador', [AlumnoController::class, 'index'])->name('coordinador');
-    Route::get('/alumnos', [AlumnoController::class, 'index'])->name('alumnos.get');
 });
-Route::get('/test-agendar', function () {
-    return view('agendar');
-});
-
-Route::post('/coordinador/alumnos', [CoordinadorAlumnoController::class, 'store'])
-    ->middleware('auth')
-    ->name('coordinador.alumnos.store');
