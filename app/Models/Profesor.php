@@ -7,7 +7,9 @@ use Illuminate\Database\Eloquent\Model;
 class Profesor extends Model
 {
     protected $table = 'profesor';
+
     protected $primaryKey = 'id_profesor';
+
     public $timestamps = false;
 
     protected $fillable = [
@@ -15,18 +17,22 @@ class Profesor extends Model
         'num_empleado',
         'nombre',
         'apellidos',
-        'departamento'
+        'departamento',
+        'especialidad',
     ];
 
-    public function usuario(){
+    public function usuario()
+    {
         return $this->belongsTo(Usuario::class, 'id_usuario', 'id_usuario');
     }
 
-    public function profesor_materia(){
+    public function profesor_materia()
+    {
         return $this->hasMany(ProfesorMateria::class, 'id_profesor', 'id_profesor');
     }
 
-    public function disponibilidad(){
+    public function disponibilidad()
+    {
         return $this->hasMany(Disponibilidad::class, 'id_profesor', 'id_profesor');
     }
 }
