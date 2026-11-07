@@ -2,6 +2,7 @@
 
 namespace Tests\Feature;
 
+use App\Models\Alumno;
 use App\Models\Usuario;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Hash;
@@ -72,7 +73,7 @@ class CoordinadorAlumnoControllerTest extends TestCase
             ]);
 
         $response->assertStatus(201)
-            ->assertJsonPath('alumno.correo', 'nuevo@example.com');
+            ->assertJsonPath('alumno.usuario.correo', 'nuevo@example.com');
 
         $this->assertDatabaseHas('usuario', [
             'correo' => 'nuevo@example.com',
@@ -114,12 +115,60 @@ class CoordinadorAlumnoControllerTest extends TestCase
                 'telefono' => '5551234567',
             ]);
 
-        $response->assertRedirect(route('coordinador'));
+        $response->assertRedirect(route('coordinador'))
+            ->assertSessionHas('status', 'Alumno registrado exitosamente.')
+            ->assertSessionHas('contrasena_temporal');
 
         $this->assertDatabaseHas('alumno', [
             'matricula' => 'A00123456',
             'nombre' => 'Ana',
             'apellidos' => 'Pérez López',
+            'telefono' => '5551234567',
+            'estado' => 'Activo',
         ]);
+        $this->assertDatabaseHas('usuario', [
+            'correo' => 'nuevo@example.com',
+            'rol' => 'Alumno',
+            'estado' => 'Activo',
+        ]);
+
+        $this->get(route('coordinador'))
+            ->assertOk()
+            ->assertSee('A00123456')
+            ->assertSee('Ana Pérez López')
+            ->assertSee('Contraseña temporal del alumno');
+    }
+
+    public function test_coordinator_can_view_and_search_student_records(): void
+    {
+        $coordinador = Usuario::create([
+            'correo' => 'coordinador@example.com',
+            'contrasena_hash' => Hash::make('password'),
+            'rol' => 'Coordinador',
+            'estado' => 'Activo',
+        ]);
+        $usuarioAlumno = Usuario::create([
+            'correo' => 'ana@example.com',
+            'contrasena_hash' => Hash::make('password'),
+            'rol' => 'Alumno',
+            'estado' => 'Activo',
+        ]);
+        $alumno = new Alumno([
+            'id_usuario' => $usuarioAlumno->id_usuario,
+            'matricula' => 'A00123456',
+            'nombre' => 'Ana',
+            'apellidos' => 'Pérez López',
+            'telefono' => '5551234567',
+        ]);
+        $alumno->estado = 'Activo';
+        $alumno->save();
+
+        $this->actingAs($coordinador)
+            ->get(route('coordinador.alumnos.index', ['q' => 'A00123456']))
+            ->assertOk()
+            ->assertViewIs('Coordinador.alumnos')
+            ->assertSee('A00123456')
+            ->assertSee('Ana Pérez López')
+            ->assertSee('ana@example.com');
     }
 }

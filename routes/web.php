@@ -1,6 +1,5 @@
 <?php
 
-use App\Http\Controllers\AlumnoController;
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\CoordinadorAlumnoController;
 use App\Http\Controllers\CoordinadorProfesorController;
@@ -17,12 +16,14 @@ Route::middleware(['auth', 'role:Coordinador'])
     ->prefix('coordinador')
     ->name('coordinador.')
     ->group(function () {
-        
         // Todo este CRUD ahora es impenetrable para Alumnos o Profesores
-        Route::apiResource('alumnos', CoordinadorAlumnoController::class);
-        Route::apiResource('profesores', CoordinadorProfesorController::class);
-        
-});
+        Route::apiResource('alumnos', CoordinadorAlumnoController::class)->except(['show']);
+        Route::apiResource('profesores', CoordinadorProfesorController::class)->except(['show']);
+
+    });
+
+Route::get('/coordinador', [CoordinadorAlumnoController::class, 'index'])
+    ->middleware(['auth', 'role:Coordinador'])->name('coordinador');
 
 /*
 |--------------------------------------------------------------------------
@@ -34,8 +35,6 @@ Route::get('/', function (Request $request) {
         $request->user()->rol === 'Coordinador' ? 'coordinador' : 'mis-asesorias'
     );
 })->middleware('auth')->name('home');
-
-
 
 Route::get('/login', function () {
     return view('login');
