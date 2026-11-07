@@ -58,6 +58,24 @@
             <label class="text-sm font-medium text-gray-700">Especialidad
                 <input name="especialidad" value="{{ old('especialidad') }}" required class="mt-1 w-full rounded-lg border border-gray-300 px-3 py-2">
             </label>
+            <div class="sm:col-span-2 lg:col-span-3">
+                <label class="block text-sm font-medium text-gray-700 mb-2">Materias que puede impartir (Seleccione al menos una)</label>
+                <div class="grid grid-cols-1 sm:grid-cols-3 gap-2 rounded-lg border border-gray-300 p-3 bg-gray-50">
+                    <!-- Ejemplo estático o dinámico iterando el catálogo de materias -->
+                    <label class="flex items-center space-x-2 text-sm text-gray-700">
+                        <input type="checkbox" name="materias[]" value="1" class="rounded border-gray-300 text-[#1F4E78] focus:ring-[#1F4E78]">
+                        <span>Matemáticas</span>
+                    </label>
+                    <label class="flex items-center space-x-2 text-sm text-gray-700">
+                        <input type="checkbox" name="materias[]" value="2" class="rounded border-gray-300 text-[#1F4E78] focus:ring-[#1F4E78]">
+                        <span>Programación</span>
+                    </label>
+                    <label class="flex items-center space-x-2 text-sm text-gray-700">
+                        <input type="checkbox" name="materias[]" value="3" class="rounded border-gray-300 text-[#1F4E78] focus:ring-[#1F4E78]">
+                        <span>Inglés</span>
+                    </label>
+                </div>
+            </div>
             <div class="flex items-end">
                 <button type="submit" class="w-full rounded-lg bg-[#1F4E78] px-4 py-2 font-semibold text-white transition hover:bg-[#193f61]">Guardar profesor</button>
             </div>

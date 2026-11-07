@@ -35,4 +35,11 @@ return [
         ],
     ],
 
+    'coordinator' => [
+        'email' => env('COORDINATOR_EMAIL', 'coordinador1@email.com'),
+        'password' => env('COORDINATOR_PASSWORD'),
+        'second_email' => env('COORDINATOR_2_EMAIL', 'coordinador2@email.com'),
+        'second_password' => env('COORDINATOR_2_PASSWORD'),
+    ],
+
 ];
