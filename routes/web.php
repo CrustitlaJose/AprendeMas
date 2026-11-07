@@ -4,6 +4,7 @@ use App\Http\Controllers\AuthController;
 use App\Http\Controllers\CoordinadorAlumnoController;
 use App\Http\Controllers\CoordinadorProfesorController;
 use App\Http\Controllers\DisponibilidadController;
+use App\Http\Controllers\ProfesorDisponibilidadController;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 
@@ -16,7 +17,6 @@ Route::middleware(['auth', 'role:Coordinador'])
     ->prefix('coordinador')
     ->name('coordinador.')
     ->group(function () {
-        // Todo este CRUD ahora es impenetrable para Alumnos o Profesores
         Route::apiResource('alumnos', CoordinadorAlumnoController::class)->except(['show']);
         Route::apiResource('profesores', CoordinadorProfesorController::class)->except(['show']);
 
@@ -24,6 +24,34 @@ Route::middleware(['auth', 'role:Coordinador'])
 
 Route::get('/coordinador', [CoordinadorAlumnoController::class, 'index'])
     ->middleware(['auth', 'role:Coordinador'])->name('coordinador');
+
+/*
+|--------------------------------------------------------------------------
+| Middleware para rol de coordinador
+|--------------------------------------------------------------------------
+*/
+/*
+Route::middleware(['auth', 'role:Alumno'])
+    ->prefix('alumno')
+    ->name('alumno.')
+    ->group(function () {
+        Route::apiResource('asesorias', AlumnoAsesoriaController::class)->except(['show']);
+
+    });
+*/
+
+/*
+|--------------------------------------------------------------------------
+| Middleware para rol de coordinador
+|--------------------------------------------------------------------------
+*/
+Route::middleware(['auth', 'role:Profesor'])
+    ->prefix('profesor')
+    ->name('profesor.')
+    ->group(function () {
+        Route::apiResource('disponibilidades', ProfesorDisponibilidadController::class);
+
+    });
 
 /*
 |--------------------------------------------------------------------------

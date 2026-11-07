@@ -2,6 +2,7 @@
 
 namespace Tests\Feature;
 
+use App\Models\Materia;
 use App\Models\Usuario;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Hash;
@@ -19,6 +20,18 @@ class CoordinadorProfesorControllerTest extends TestCase
             'rol' => 'Coordinador',
             'estado' => 'Activo',
         ]);
+        $materiaMatematicas = Materia::create([
+            'nombre_materia' => 'Matemáticas',
+            'descripcion' => 'Matemáticas',
+            'clave' => 'MAT-01',
+            'area' => 'Ciencias',
+        ]);
+        $materiaProgramacion = Materia::create([
+            'nombre_materia' => 'Programación',
+            'descripcion' => 'Programación',
+            'clave' => 'PROG-01',
+            'area' => 'Ingeniería',
+        ]);
 
         $response = $this->actingAs($coordinador)
             ->postJson(route('coordinador.profesores.store'), [
@@ -28,6 +41,7 @@ class CoordinadorProfesorControllerTest extends TestCase
                 'apellidos' => 'García',
                 'departamento' => 'Sistemas',
                 'especialidad' => 'Programación',
+                'materias' => [$materiaMatematicas->id_materia, $materiaProgramacion->id_materia],
             ]);
 
         $response->assertCreated()
@@ -38,6 +52,15 @@ class CoordinadorProfesorControllerTest extends TestCase
             'num_empleado' => 'P001',
             'especialidad' => 'Programación',
         ]);
+        $profesorId = $response->json('profesor.id_profesor');
+        $this->assertDatabaseHas('profesor_materia', [
+            'id_profesor' => $profesorId,
+            'id_materia' => $materiaMatematicas->id_materia,
+        ]);
+        $this->assertDatabaseHas('profesor_materia', [
+            'id_profesor' => $profesorId,
+            'id_materia' => $materiaProgramacion->id_materia,
+        ]);
 
         $this->get(route('coordinador.profesores.index', ['q' => 'P001']))
             ->assertOk()
@@ -45,5 +68,87 @@ class CoordinadorProfesorControllerTest extends TestCase
             ->assertSee('Luis García')
             ->assertSee('Programación')
             ->assertSee('profesor@example.com');
+    }
+
+    public function test_coordinator_cannot_register_a_professor_with_an_unavailable_subject(): void
+    {
+        $coordinador = Usuario::create([
+            'correo' => 'coordinador@example.com',
+            'contrasena_hash' => Hash::make('password'),
+            'rol' => 'Coordinador',
+            'estado' => 'Activo',
+        ]);
+
+        $response = $this->actingAs($coordinador)
+            ->postJson(route('coordinador.profesores.store'), [
+                'correo' => 'profesor@example.com',
+                'num_empleado' => 'P001',
+                'nombre' => 'Luis',
+                'apellidos' => 'García',
+                'departamento' => 'Sistemas',
+                'especialidad' => 'Programación',
+                'materias' => [999],
+            ]);
+
+        $response->assertUnprocessable()
+            ->assertJsonValidationErrors('materias.0');
+        $this->assertDatabaseMissing('profesor', ['num_empleado' => 'P001']);
+        $this->assertDatabaseMissing('usuario', ['correo' => 'profesor@example.com']);
+    }
+
+    public function test_coordinator_must_select_at_least_one_subject_when_registering_a_professor(): void
+    {
+        $coordinador = Usuario::create([
+            'correo' => 'coordinador@example.com',
+            'contrasena_hash' => Hash::make('password'),
+            'rol' => 'Coordinador',
+            'estado' => 'Activo',
+        ]);
+
+        $response = $this->actingAs($coordinador)
+            ->postJson(route('coordinador.profesores.store'), [
+                'correo' => 'profesor@example.com',
+                'num_empleado' => 'P001',
+                'nombre' => 'Luis',
+                'apellidos' => 'García',
+                'departamento' => 'Sistemas',
+                'especialidad' => 'Programación',
+                'materias' => [],
+            ]);
+
+        $response->assertUnprocessable()
+            ->assertJsonValidationErrors('materias');
+        $this->assertDatabaseMissing('profesor', ['num_empleado' => 'P001']);
+    }
+
+    public function test_coordinator_cannot_select_the_same_subject_more_than_once(): void
+    {
+        $coordinador = Usuario::create([
+            'correo' => 'coordinador@example.com',
+            'contrasena_hash' => Hash::make('password'),
+            'rol' => 'Coordinador',
+            'estado' => 'Activo',
+        ]);
+        $materia = Materia::create([
+            'nombre_materia' => 'Matemáticas',
+            'descripcion' => 'Matemáticas',
+            'clave' => 'MAT-01',
+            'area' => 'Ciencias',
+        ]);
+
+        $response = $this->actingAs($coordinador)
+            ->postJson(route('coordinador.profesores.store'), [
+                'correo' => 'profesor@example.com',
+                'num_empleado' => 'P001',
+                'nombre' => 'Luis',
+                'apellidos' => 'García',
+                'departamento' => 'Sistemas',
+                'especialidad' => 'Programación',
+                'materias' => [$materia->id_materia, $materia->id_materia],
+            ]);
+
+        $response->assertUnprocessable()
+            ->assertJsonValidationErrors('materias.1');
+        $this->assertDatabaseMissing('profesor', ['num_empleado' => 'P001']);
     }
 }

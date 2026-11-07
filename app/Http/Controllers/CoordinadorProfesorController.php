@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\Profesor;
+use App\Models\ProfesorMateria;
 use App\Models\Usuario;
 use Illuminate\Contracts\View\View;
 use Illuminate\Database\Eloquent\Builder;
@@ -52,6 +53,8 @@ class CoordinadorProfesorController extends Controller
             'apellidos' => ['required', 'string'],
             'departamento' => ['required', 'string'],
             'especialidad' => ['required', 'string'],
+            'materias' => ['required', 'array', 'min:1'],
+            'materias.*' => ['required', 'integer', 'distinct', Rule::exists('materia', 'id_materia')],
         ]);
         $contrasenaTemporal = Str::random(16);
 
@@ -71,6 +74,13 @@ class CoordinadorProfesorController extends Controller
             $profesor->departamento = $validated['departamento'];
             $profesor->especialidad = $validated['especialidad'];
             $profesor->save();
+
+            foreach ($validated['materias'] as $idMateria) {
+                ProfesorMateria::create([
+                    'id_profesor' => $profesor->id_profesor,
+                    'id_materia' => $idMateria,
+                ]);
+            }
 
             return $profesor;
         });
