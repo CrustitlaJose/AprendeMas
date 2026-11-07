@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\AlumnoAsesoriaController;
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\CoordinadorAlumnoController;
 use App\Http\Controllers\CoordinadorProfesorController;
@@ -25,12 +26,6 @@ Route::middleware(['auth', 'role:Coordinador'])
 Route::get('/coordinador', [CoordinadorAlumnoController::class, 'index'])
     ->middleware(['auth', 'role:Coordinador'])->name('coordinador');
 
-/*
-|--------------------------------------------------------------------------
-| Middleware para rol de coordinador
-|--------------------------------------------------------------------------
-*/
-/*
 Route::middleware(['auth', 'role:Alumno'])
     ->prefix('alumno')
     ->name('alumno.')
@@ -38,7 +33,6 @@ Route::middleware(['auth', 'role:Alumno'])
         Route::apiResource('asesorias', AlumnoAsesoriaController::class)->except(['show']);
 
     });
-*/
 
 /*
 |--------------------------------------------------------------------------

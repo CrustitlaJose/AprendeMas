@@ -26,8 +26,8 @@ class Disponibilidad extends Model
         return $this->belongsTo(Profesor::class, 'id_profesor', 'id_profesor');
     }
 
-    public function asesoria()
+    public function asesorias()
     {
-        return $this->hasOne(Asesoria::class, 'id_disponibilidad', 'id_disponibilidad');
+        return $this->hasMany(Asesoria::class, 'id_disponibilidad', 'id_disponibilidad');
     }
 }

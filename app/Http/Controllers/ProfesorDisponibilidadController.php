@@ -186,7 +186,7 @@ class ProfesorDisponibilidadController extends Controller
     private function assertNotBooked(Disponibilidad $disponibilidad): void
     {
         abort_if(
-            $disponibilidad->asesoria()->exists(),
+            $disponibilidad->asesorias()->where('estado', 'Confirmada')->exists(),
             409,
             'No puedes modificar ni eliminar una disponibilidad con una asesoría asociada.'
         );
