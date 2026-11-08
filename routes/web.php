@@ -3,6 +3,7 @@
 use App\Http\Controllers\AlumnoAsesoriaController;
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\CoordinadorAlumnoController;
+use App\Http\Controllers\CoordinadorDisponibilidadController;
 use App\Http\Controllers\CoordinadorProfesorController;
 use App\Http\Controllers\DisponibilidadController;
 use App\Http\Controllers\ProfesorDisponibilidadController;
@@ -19,6 +20,8 @@ Route::middleware(['auth', 'role:Coordinador'])
     ->name('coordinador.')
     ->group(function () {
         Route::apiResource('alumnos', CoordinadorAlumnoController::class)->except(['show']);
+        Route::get('disponibilidades', [CoordinadorDisponibilidadController::class, 'index'])
+            ->name('disponibilidades.index');
         Route::apiResource('profesores', CoordinadorProfesorController::class)->except(['show']);
 
     });
