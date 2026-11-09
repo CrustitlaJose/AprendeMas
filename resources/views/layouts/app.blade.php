@@ -3,6 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="csrf-token" content="{{ csrf_token() }}">
     <title>Aprende+ | @yield('title', 'Inicio')</title>
     <!-- Directiva de Vite para cargar Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
@@ -14,7 +15,7 @@
             <a href="{{ auth()->user()?->rol === 'Coordinador' ? route('coordinador') : route('mis-asesorias') }}" class="text-2xl font-bold tracking-wide text-white">Aprende+</a>
 
             <div class="flex items-center gap-4">
-                <span class="hidden text-sm text-blue-100 sm:inline">{{ auth()->user()?->rol === 'Coordinador' ? 'Portal de coordinación' : 'Portal del alumno' }}</span>
+                <span class="hidden text-sm text-blue-100 sm:inline">{{ match (auth()->user()?->rol) { 'Coordinador' => 'Portal de coordinación', 'Profesor' => 'Portal docente', default => 'Portal del alumno' } }}</span>
                 <span class="hidden h-6 border-l border-blue-700 sm:inline"></span>
                 <span class="hidden text-sm font-medium text-white sm:inline">{{ auth()->user()?->coordinador?->first()?->nombre ?? auth()->user()?->correo }}</span>
                 <form action="{{ route('logout') }}" method="POST">
@@ -38,13 +39,20 @@
                         'border-white text-white' => request()->routeIs('coordinador.profesores.*'),
                         'border-transparent text-blue-100 hover:text-white' => ! request()->routeIs('coordinador.profesores.*'),
                     ])>Profesores</a>
+                    <a href="{{ route('coordinador') }}#supervision" class="border-b-2 border-transparent px-4 py-3 text-sm font-semibold text-blue-100 transition hover:text-white">Disponibilidades</a>
+                </div>
+            </nav>
+        @elseif (auth()->user()?->rol === 'Profesor')
+            <nav aria-label="Navegación docente" class="border-t border-blue-800 bg-blue-900">
+                <div class="container mx-auto flex gap-1 overflow-x-auto px-4">
+                    <a href="{{ route('mis-asesorias') }}#agenda-docente" class="border-b-2 border-transparent px-4 py-3 text-sm font-semibold text-blue-100 transition hover:text-white">Mi agenda</a>
                 </div>
             </nav>
         @else
             <nav aria-label="Navegación del alumno" class="border-t border-blue-800 bg-blue-900">
                 <div class="container mx-auto flex gap-1 overflow-x-auto px-4">
-                    <a href="{{ route('mis-asesorias') }}" class="border-b-2 border-transparent px-4 py-3 text-sm font-semibold text-blue-100 transition hover:text-white">Mis asesorías</a>
-                    <a href="{{ route('disponibilidades.index') }}" class="border-b-2 border-transparent px-4 py-3 text-sm font-semibold text-blue-100 transition hover:text-white">Disponibilidades</a>
+                    <a href="{{ route('mis-asesorias') }}#citas" class="border-b-2 border-transparent px-4 py-3 text-sm font-semibold text-blue-100 transition hover:text-white">Mis asesorías</a>
+                    <a href="{{ route('mis-asesorias') }}#oferta" class="border-b-2 border-transparent px-4 py-3 text-sm font-semibold text-blue-100 transition hover:text-white">Disponibilidades</a>
                 </div>
             </nav>
         @endif
@@ -54,5 +62,6 @@
         @yield('content')
     </main>
 
+    @vite('resources/js/app.js')
 </body>
 </html>
