@@ -32,7 +32,11 @@ Route::get('/coordinador', [CoordinadorAlumnoController::class, 'index'])
 */
 Route::get('/', function (Request $request) {
     return redirect()->route(
-        $request->user()->rol === 'Coordinador' ? 'coordinador' : 'mis-asesorias'
+        match ($request->user()->rol) {
+            'Coordinador' => 'coordinador',
+            'Profesor' => 'profesor.disponibilidades.index',
+            default => 'mis-asesorias',
+        }
     );
 })->middleware('auth')->name('home');
 
@@ -62,12 +66,30 @@ Route::post('/logout', [AuthController::class, 'logout'])
 Route::middleware('auth')->group(function () {
 
     // --- Vistas y Paneles Generales ---
-    Route::get('/mis-asesorias', function () {
+    Route::get('/mis-asesorias', function (Request $request) {
+        if ($request->user()->rol === 'Profesor') {
+            return redirect()->route('profesor.disponibilidades.index');
+        }
+
         return view('mis-asesorias');
     })->name('mis-asesorias');
 
     // --- Módulo Disponibilidad (Profesor) ---
     Route::get('/disponibilidades', [DisponibilidadController::class, 'index'])
         ->name('disponibilidades.index');
+
+    Route::middleware('role:Profesor')
+        ->prefix('profesor')
+        ->name('profesor.')
+        ->group(function () {
+            Route::get('/disponibilidades', [DisponibilidadController::class, 'teacherIndex'])
+                ->name('disponibilidades.index');
+            Route::post('/disponibilidades', [DisponibilidadController::class, 'store'])
+                ->name('disponibilidades.store');
+            Route::put('/disponibilidades/{disponibilidad}', [DisponibilidadController::class, 'update'])
+                ->name('disponibilidades.update');
+            Route::delete('/disponibilidades/{disponibilidad}', [DisponibilidadController::class, 'destroy'])
+                ->name('disponibilidades.destroy');
+        });
 
 });

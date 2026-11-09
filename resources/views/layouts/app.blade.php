@@ -12,7 +12,7 @@
     
     <header class="border-b border-blue-800 bg-blue-900 text-white shadow-md">
         <div class="container mx-auto flex min-h-16 items-center justify-between gap-4 px-4">
-            <a href="{{ auth()->user()?->rol === 'Coordinador' ? route('coordinador') : route('mis-asesorias') }}" class="text-2xl font-bold tracking-wide text-white">Aprende+</a>
+            <a href="{{ match (auth()->user()?->rol) { 'Coordinador' => route('coordinador'), 'Profesor' => route('profesor.disponibilidades.index'), default => route('mis-asesorias') } }}" class="text-2xl font-bold tracking-wide text-white">Aprende+</a>
 
             <div class="flex items-center gap-4">
                 <span class="hidden text-sm text-blue-100 sm:inline">{{ match (auth()->user()?->rol) { 'Coordinador' => 'Portal de coordinación', 'Profesor' => 'Portal docente', default => 'Portal del alumno' } }}</span>
@@ -45,7 +45,11 @@
         @elseif (auth()->user()?->rol === 'Profesor')
             <nav aria-label="Navegación docente" class="border-t border-blue-800 bg-blue-900">
                 <div class="container mx-auto flex gap-1 overflow-x-auto px-4">
-                    <a href="{{ route('mis-asesorias') }}#agenda-docente" class="border-b-2 border-transparent px-4 py-3 text-sm font-semibold text-blue-100 transition hover:text-white">Mi agenda</a>
+                    <a href="{{ route('profesor.disponibilidades.index') }}" @class([
+                        'border-b-2 px-4 py-3 text-sm font-semibold transition',
+                        'border-white text-white' => request()->routeIs('profesor.disponibilidades.*'),
+                        'border-transparent text-blue-100 hover:text-white' => ! request()->routeIs('profesor.disponibilidades.*'),
+                    ])>Mi agenda</a>
                 </div>
             </nav>
         @else
