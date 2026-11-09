@@ -13,6 +13,19 @@
         <span class="text-sm text-gray-500">Catálogo de alumnos</span>
     </header>
 
+    <section id="supervision" class="space-y-4 rounded-xl border border-gray-200 bg-white p-5 shadow-sm" data-record-panel data-endpoint-url="{{ url('/coordinador/disponibilidades') }}" data-record-label="disponibilidades">
+        <div class="flex items-center justify-between gap-4">
+            <div>
+                <h2 class="text-lg font-semibold text-gray-900">Supervisión de disponibilidades</h2>
+                <p class="mt-1 text-sm text-gray-600">Consulta las disponibilidades registradas.</p>
+            </div>
+            <button type="button" data-reload-records class="rounded-lg border border-gray-300 px-3 py-2 text-sm font-semibold text-gray-700 hover:bg-gray-50">Actualizar</button>
+        </div>
+        <p data-load-state class="text-sm text-gray-500" role="status">Cargando disponibilidades…</p>
+        <div data-record-error class="hidden rounded-lg border border-red-200 bg-red-50 p-4 text-sm text-red-800" role="alert"></div>
+        <div data-record-list class="grid gap-4 md:grid-cols-2 xl:grid-cols-3"></div>
+    </section>
+
     @if (session('status'))
         <div class="rounded-lg border border-[#28A745]/30 bg-green-50 p-4 text-sm text-green-800" role="status">
             <p>{{ session('status') }}</p>
