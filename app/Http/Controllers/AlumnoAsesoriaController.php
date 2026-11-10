@@ -43,12 +43,12 @@ class AlumnoAsesoriaController extends Controller
             $this->assertSlotAvailable($disponibilidad);
             $this->assertFutureSlot($disponibilidad);
             $this->assertMateriaBelongsToProfesor($disponibilidad, $booking['id_materia']);
-            $this->lockAulaAndAssertAvailable($booking['id_aula'], $disponibilidad);
+            $aula = $this->aulaDisponible($disponibilidad);
 
             $asesoria = $alumno->asesoria()->create([
                 'id_disponibilidad' => $disponibilidad->id_disponibilidad,
                 'id_materia' => $booking['id_materia'],
-                'id_aula' => $booking['id_aula'],
+                'id_aula' => $aula->id_aula,
                 'fecha_registro' => now(),
                 'estado' => 'Confirmada',
             ]);
@@ -94,11 +94,10 @@ class AlumnoAsesoriaController extends Controller
             $this->assertSlotAvailable($disponibilidad, $mismaDisponibilidad ? $asesoria : null);
             $this->assertFutureSlot($disponibilidad);
             $this->assertMateriaBelongsToProfesor($disponibilidad, $datosActualizados['id_materia']);
-            $this->lockAulaAndAssertAvailable(
-                $datosActualizados['id_aula'],
-                $disponibilidad,
-                $asesoria->id_asesoria
-            );
+
+            if (! $mismaDisponibilidad) {
+                $datosActualizados['id_aula'] = $this->aulaDisponible($disponibilidad, $asesoria->id_asesoria)->id_aula;
+            }
 
             $asesoria->update($datosActualizados);
 
@@ -155,7 +154,7 @@ class AlumnoAsesoriaController extends Controller
     }
 
     /**
-     * @return array{id_disponibilidad?: int, id_materia?: int, id_aula?: int}
+     * @return array{id_disponibilidad?: int, id_materia?: int}
      */
     private function validatedBooking(Request $request, bool $partial = false): array
     {
@@ -163,7 +162,7 @@ class AlumnoAsesoriaController extends Controller
         $validated = $request->validate([
             'id_disponibilidad' => [...$presenceRules, 'integer', 'exists:disponibilidad,id_disponibilidad'],
             'id_materia' => [...$presenceRules, 'integer', 'exists:materia,id_materia'],
-            'id_aula' => [...$presenceRules, 'integer', 'exists:aula,id_aula'],
+            'id_aula' => ['prohibited'],
         ]);
 
         if ($partial && $validated === []) {
@@ -222,19 +221,16 @@ class AlumnoAsesoriaController extends Controller
         }
     }
 
-    private function lockAulaAndAssertAvailable(
-        int $idAula,
+    private function aulaDisponible(
         Disponibilidad $disponibilidad,
         ?int $exceptAsesoriaId = null
-    ): void {
-        if ($disponibilidad->modalidad !== 'Presencial') {
-            return;
-        }
-
-        Aula::query()->whereKey($idAula)->lockForUpdate()->firstOrFail();
-
-        $aulaOcupada = Asesoria::query()
-            ->where('id_aula', $idAula)
+    ): Aula {
+        $aulas = Aula::query()
+            ->where('tipo', $disponibilidad->modalidad)
+            ->orderBy('id_aula')
+            ->lockForUpdate()
+            ->get();
+        $aulasOcupadas = Asesoria::query()
             ->where('estado', 'Confirmada')
             ->whereHas('disponibilidad', static function (Builder $query) use ($disponibilidad): void {
                 $query->where('fecha', $disponibilidad->fecha)
@@ -245,12 +241,18 @@ class AlumnoAsesoriaController extends Controller
                 $exceptAsesoriaId !== null,
                 static fn (Builder $query): Builder => $query->where('id_asesoria', '!=', $exceptAsesoriaId)
             )
-            ->exists();
+            ->pluck('id_aula')
+            ->map(static fn (int|string $idAula): int => (int) $idAula)
+            ->all();
 
-        if ($aulaOcupada) {
-            throw ValidationException::withMessages([
-                'id_aula' => 'El aula seleccionada ya está ocupada en ese horario.',
-            ]);
+        foreach ($aulas as $aula) {
+            if (! in_array((int) $aula->id_aula, $aulasOcupadas, true)) {
+                return $aula;
+            }
         }
+
+        throw ValidationException::withMessages([
+            'id_disponibilidad' => 'No hay aulas disponibles para el horario seleccionado.',
+        ]);
     }
 }

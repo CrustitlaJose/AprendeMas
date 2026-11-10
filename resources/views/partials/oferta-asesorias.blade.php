@@ -49,15 +49,9 @@
             <input type="hidden" name="id_disponibilidad">
             <input type="hidden" name="id_materia">
             <p class="text-sm text-gray-700">Materia seleccionada: <span data-selected-subject class="font-semibold"></span></p>
-            <label class="text-sm font-medium text-gray-700">
-                Aula
-                <select name="id_aula" disabled class="mt-1 w-full rounded-lg border border-gray-300 bg-gray-100 px-3 py-2 text-sm">
-                    <option value="">Catálogo de aulas no disponible</option>
-                </select>
-            </label>
-            <p class="text-sm text-amber-800 sm:col-span-2" role="status">No se puede confirmar la reserva hasta que el sistema proporcione las aulas disponibles. No se asignará un aula a una disponibilidad docente.</p>
+            <p class="text-sm text-gray-600 sm:col-span-2" role="status">El sistema asignará automáticamente un cubículo disponible al confirmar la reserva.</p>
             <div class="flex flex-wrap gap-3 sm:col-span-2">
-                <button type="submit" disabled class="rounded-lg bg-[#1F4E78] px-4 py-2 text-sm font-semibold text-white opacity-50">Confirmar reserva</button>
+                <button type="submit" class="rounded-lg bg-[#1F4E78] px-4 py-2 text-sm font-semibold text-white transition hover:bg-[#193f61]">Confirmar reserva</button>
                 <button type="button" data-close-booking class="rounded-lg border border-gray-300 px-4 py-2 text-sm font-semibold text-gray-700 hover:bg-gray-50">Cerrar</button>
             </div>
         </form>

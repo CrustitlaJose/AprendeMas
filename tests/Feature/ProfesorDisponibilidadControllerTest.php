@@ -22,7 +22,7 @@ class ProfesorDisponibilidadControllerTest extends TestCase
         ['usuario' => $usuario, 'profesor' => $profesor] = $this->createProfessor('profesor@example.com');
         $fecha = now()->addDays(2)->toDateString();
 
-        $createResponse = $this->actingAs($usuario)->postJson(route('profesor.disponibilidades.store'), [
+        $createResponse = $this->actingAs($usuario)->postJson(route('profesor.api.disponibilidades.store'), [
             'fecha' => $fecha,
             'hora_inicio' => '09:00',
             'hora_fin' => '10:00',
@@ -43,14 +43,14 @@ class ProfesorDisponibilidadControllerTest extends TestCase
             'estado' => 'Disponible',
         ]);
 
-        $this->getJson(route('profesor.disponibilidades.index'))
+        $this->getJson(route('profesor.api.disponibilidades.index'))
             ->assertOk()
             ->assertJsonPath('data.0.id_disponibilidad', $idDisponibilidad);
-        $this->getJson(route('profesor.disponibilidades.show', $idDisponibilidad))
+        $this->getJson(route('profesor.api.disponibilidades.show', $idDisponibilidad))
             ->assertOk()
             ->assertJsonPath('data.id_disponibilidad', $idDisponibilidad);
 
-        $this->patchJson(route('profesor.disponibilidades.update', $idDisponibilidad), [
+        $this->patchJson(route('profesor.api.disponibilidades.update', $idDisponibilidad), [
             'modalidad' => 'Virtual',
         ])->assertOk()
             ->assertJsonPath('data.modalidad', 'Virtual');
@@ -60,7 +60,7 @@ class ProfesorDisponibilidadControllerTest extends TestCase
             'modalidad' => 'Virtual',
         ]);
 
-        $this->deleteJson(route('profesor.disponibilidades.destroy', $idDisponibilidad))
+        $this->deleteJson(route('profesor.api.disponibilidades.destroy', $idDisponibilidad))
             ->assertNoContent();
 
         $this->assertDatabaseMissing('disponibilidad', [
@@ -83,7 +83,7 @@ class ProfesorDisponibilidadControllerTest extends TestCase
         ]);
 
         $this->actingAs($usuario)
-            ->postJson(route('profesor.disponibilidades.store'), [
+            ->postJson(route('profesor.api.disponibilidades.store'), [
                 'fecha' => $fecha,
                 'hora_inicio' => '09:30',
                 'hora_fin' => '10:30',
@@ -93,7 +93,7 @@ class ProfesorDisponibilidadControllerTest extends TestCase
             ->assertJsonValidationErrors('hora_inicio');
 
         $this->actingAs($otroProfesor->usuario()->firstOrFail())
-            ->getJson(route('profesor.disponibilidades.show', $disponibilidad->id_disponibilidad))
+            ->getJson(route('profesor.api.disponibilidades.show', $disponibilidad->id_disponibilidad))
             ->assertNotFound();
 
         $this->assertDatabaseCount('disponibilidad', 1);
@@ -119,7 +119,7 @@ class ProfesorDisponibilidadControllerTest extends TestCase
         $aula = Aula::create([
             'nombre_cubiculo' => 'C-01',
             'capacidad' => '4',
-            'tipo' => 'Asesoría',
+            'tipo' => 'Presencial',
         ]);
         $materia = Materia::create([
             'nombre_materia' => 'Matemáticas',
@@ -145,12 +145,12 @@ class ProfesorDisponibilidadControllerTest extends TestCase
         ]);
 
         $this->actingAs($usuario)
-            ->patchJson(route('profesor.disponibilidades.update', $disponibilidad->id_disponibilidad), [
+            ->patchJson(route('profesor.api.disponibilidades.update', $disponibilidad->id_disponibilidad), [
                 'modalidad' => 'Virtual',
             ])
             ->assertStatus(409);
 
-        $this->deleteJson(route('profesor.disponibilidades.destroy', $disponibilidad->id_disponibilidad))
+        $this->deleteJson(route('profesor.api.disponibilidades.destroy', $disponibilidad->id_disponibilidad))
             ->assertStatus(409);
 
         $this->assertDatabaseHas('disponibilidad', [
@@ -163,7 +163,7 @@ class ProfesorDisponibilidadControllerTest extends TestCase
 
     public function test_only_professors_can_access_their_availabilities(): void
     {
-        $this->getJson(route('profesor.disponibilidades.index'))
+        $this->getJson(route('profesor.api.disponibilidades.index'))
             ->assertUnauthorized();
 
         $coordinador = Usuario::create([
@@ -174,7 +174,7 @@ class ProfesorDisponibilidadControllerTest extends TestCase
         ]);
 
         $this->actingAs($coordinador)
-            ->getJson(route('profesor.disponibilidades.index'))
+            ->getJson(route('profesor.api.disponibilidades.index'))
             ->assertForbidden();
     }
 
