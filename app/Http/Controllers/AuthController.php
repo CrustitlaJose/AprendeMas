@@ -58,7 +58,11 @@ class AuthController extends Controller
             }
 
             return redirect()->route(
-                $usuario->rol === 'Coordinador' ? 'coordinador' : 'mis-asesorias'
+                match ($usuario->rol) {
+                    'Coordinador' => 'coordinador',
+                    'Profesor' => 'profesor.disponibilidades.index',
+                    default => 'mis-asesorias',
+                }
             );
         }
 

@@ -1,27 +1,8 @@
 @extends('layouts.app')
 
-@section('title', auth()->user()?->rol === 'Profesor' ? 'Agenda docente' : 'Mis asesorías')
+@section('title', 'Mis asesorías')
 
 @section('content')
-@if (auth()->user()?->rol === 'Profesor')
-    <div class="mx-auto max-w-7xl space-y-6">
-        <header>
-            <p class="text-xs font-semibold uppercase tracking-wider text-gray-500">Gestión académica</p>
-            <h1 class="mt-1 text-3xl font-bold text-[#212529]">Agenda docente</h1>
-            <p class="mt-2 text-sm text-gray-600">Consulta tus disponibilidades registradas.</p>
-        </header>
-
-        <section id="agenda-docente" class="space-y-4" data-record-panel data-endpoint-url="{{ url('/profesor/disponibilidades') }}" data-record-label="disponibilidades">
-            <div class="flex items-center justify-between gap-4">
-                <h2 class="text-lg font-semibold text-gray-900">Disponibilidades</h2>
-                <button type="button" data-reload-records class="rounded-lg border border-gray-300 px-3 py-2 text-sm font-semibold text-gray-700 hover:bg-gray-50">Actualizar</button>
-            </div>
-            <p data-load-state class="text-sm text-gray-500" role="status">Cargando agenda…</p>
-            <div data-record-error class="hidden rounded-lg border border-red-200 bg-red-50 p-4 text-sm text-red-800" role="alert"></div>
-            <div data-record-list class="grid gap-4 md:grid-cols-2 xl:grid-cols-3"></div>
-        </section>
-    </div>
-@else
     @include('partials.oferta-asesorias')
 
     <section id="citas" class="mx-auto mt-10 max-w-7xl space-y-4" data-appointments-panel data-endpoint-url="{{ url('/alumno/asesorias') }}">
@@ -38,5 +19,4 @@
         <div data-appointments-message class="hidden rounded-lg border border-green-200 bg-green-50 p-4 text-sm text-green-800" role="status"></div>
         <div data-appointments-list class="grid gap-4 md:grid-cols-2 xl:grid-cols-3"></div>
     </section>
-@endif
 @endsection

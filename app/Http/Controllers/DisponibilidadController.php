@@ -6,12 +6,93 @@ use App\Models\Disponibilidad;
 use App\Models\Materia;
 use App\Models\Profesor;
 use App\Models\ProfesorMateria;
+use Carbon\CarbonImmutable;
+use Illuminate\Contracts\View\View;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\JsonResponse;
+use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Validation\ValidationException;
 
 class DisponibilidadController extends Controller
 {
+    public function teacherIndex(Request $request): View
+    {
+        $profesor = $this->profesorAutenticado($request);
+        $disponibilidades = $profesor->disponibilidad()
+            ->with('asesoria')
+            ->orderBy('fecha')
+            ->orderBy('hora_inicio')
+            ->get();
+
+        return view('Profesor.disponibilidades', compact('disponibilidades'));
+    }
+
+    public function store(Request $request): RedirectResponse
+    {
+        $profesor = $this->profesorAutenticado($request);
+        $validated = $request->validate([
+            ...$this->reglasDisponibilidad(),
+            'repeticion' => ['required', 'in:unica,semanal'],
+            'fecha_fin' => ['exclude_unless:repeticion,semanal', 'required', 'date_format:Y-m-d', 'after_or_equal:fecha'],
+        ]);
+        $fechas = $this->fechasDeRepeticion($validated);
+
+        DB::transaction(function () use ($profesor, $validated, $fechas): void {
+            foreach ($fechas as $fecha) {
+                $this->validarTraslape($profesor, [
+                    ...$validated,
+                    'fecha' => $fecha,
+                ]);
+            }
+
+            foreach ($fechas as $fecha) {
+                $profesor->disponibilidad()->create([
+                    'fecha' => $fecha,
+                    'hora_inicio' => $validated['hora_inicio'],
+                    'hora_fin' => $validated['hora_fin'],
+                    'modalidad' => $validated['modalidad'],
+                    'estado' => 'Disponible',
+                ]);
+            }
+        });
+
+        return redirect()->route('profesor.disponibilidades.index')
+            ->with('status', count($fechas) === 1
+                ? 'La disponibilidad se registró correctamente.'
+                : count($fechas).' disponibilidades semanales se registraron correctamente.');
+    }
+
+    public function update(Request $request, int $disponibilidadId): RedirectResponse
+    {
+        $profesor = $this->profesorAutenticado($request);
+        $disponibilidad = $profesor->disponibilidad()
+            ->whereKey($disponibilidadId)
+            ->firstOrFail();
+        $this->validarEditable($disponibilidad);
+
+        $validated = $request->validate($this->reglasDisponibilidad());
+        $this->validarTraslape($profesor, $validated, $disponibilidad->id_disponibilidad);
+        $disponibilidad->fill($validated)->save();
+
+        return redirect()->route('profesor.disponibilidades.index')
+            ->with('status', 'La disponibilidad se actualizó correctamente.');
+    }
+
+    public function destroy(Request $request, int $disponibilidadId): RedirectResponse
+    {
+        $profesor = $this->profesorAutenticado($request);
+        $disponibilidad = $profesor->disponibilidad()
+            ->whereKey($disponibilidadId)
+            ->firstOrFail();
+        $this->validarEditable($disponibilidad);
+        $disponibilidad->delete();
+
+        return redirect()->route('profesor.disponibilidades.index')
+            ->with('status', 'La disponibilidad se eliminó correctamente.');
+    }
+
     public function index(Request $request): JsonResponse
     {
         abort_unless($request->user()?->rol === 'Alumno', 403);
@@ -79,5 +160,80 @@ class DisponibilidadController extends Controller
         })->values();
 
         return response()->json(['data' => $data]);
+    }
+
+    private function profesorAutenticado(Request $request): Profesor
+    {
+        return Profesor::query()
+            ->where('id_usuario', $request->user()->getAuthIdentifier())
+            ->firstOrFail();
+    }
+
+    /**
+     * @return array<string, list<string>>
+     */
+    private function reglasDisponibilidad(): array
+    {
+        return [
+            'fecha' => ['required', 'date_format:Y-m-d', 'after_or_equal:today'],
+            'hora_inicio' => ['required', 'date_format:H:i'],
+            'hora_fin' => ['required', 'date_format:H:i', 'after:hora_inicio'],
+            'modalidad' => ['required', 'in:Presencial,Virtual'],
+        ];
+    }
+
+    /**
+     * @param  array{fecha: string, repeticion: string, fecha_fin?: string}  $validated
+     * @return list<string>
+     */
+    private function fechasDeRepeticion(array $validated): array
+    {
+        $fechaInicial = CarbonImmutable::parse($validated['fecha'])->startOfDay();
+        $fechaFinal = $validated['repeticion'] === 'semanal'
+            ? CarbonImmutable::parse($validated['fecha_fin'])->startOfDay()
+            : $fechaInicial;
+        $fechas = [];
+
+        for ($fecha = $fechaInicial; $fecha->lessThanOrEqualTo($fechaFinal); $fecha = $fecha->addWeek()) {
+            $fechas[] = $fecha->toDateString();
+        }
+
+        return $fechas;
+    }
+
+    /**
+     * @param  array{fecha: string, hora_inicio: string, hora_fin: string, modalidad: string}  $validated
+     */
+    private function validarTraslape(Profesor $profesor, array $validated, ?int $disponibilidadId = null): void
+    {
+        if ($validated['fecha'] === now()->toDateString() && $validated['hora_inicio'] <= now()->format('H:i')) {
+            throw ValidationException::withMessages([
+                'hora_inicio' => 'La hora de inicio debe ser posterior a la hora actual.',
+            ]);
+        }
+
+        $query = $profesor->disponibilidad()
+            ->where('fecha', $validated['fecha'])
+            ->where('hora_inicio', '<', $validated['hora_fin'])
+            ->where('hora_fin', '>', $validated['hora_inicio']);
+
+        if ($disponibilidadId !== null) {
+            $query->where('id_disponibilidad', '!=', $disponibilidadId);
+        }
+
+        if ($query->exists()) {
+            throw ValidationException::withMessages([
+                'hora_inicio' => 'El horario se traslapa con otra disponibilidad registrada.',
+            ]);
+        }
+    }
+
+    private function validarEditable(Disponibilidad $disponibilidad): void
+    {
+        if ($disponibilidad->estado !== 'Disponible' || $disponibilidad->asesoria()->exists()) {
+            throw ValidationException::withMessages([
+                'disponibilidad' => 'No se puede modificar ni eliminar un horario ocupado o asociado a una asesoría.',
+            ]);
+        }
     }
 }

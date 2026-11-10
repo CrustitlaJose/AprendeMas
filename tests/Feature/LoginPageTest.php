@@ -49,4 +49,22 @@ class LoginPageTest extends TestCase
             ->get(route('home'))
             ->assertRedirect(route('coordinador'));
     }
+
+    public function test_home_redirects_authenticated_professor_to_availability_management(): void
+    {
+        $usuario = Usuario::make(['rol' => 'Profesor']);
+
+        $this->actingAs($usuario)
+            ->get(route('home'))
+            ->assertRedirect(route('profesor.disponibilidades.index'));
+    }
+
+    public function test_professor_agenda_link_redirects_to_availability_management(): void
+    {
+        $usuario = Usuario::make(['rol' => 'Profesor']);
+
+        $this->actingAs($usuario)
+            ->get(route('mis-asesorias'))
+            ->assertRedirect(route('profesor.disponibilidades.index'));
+    }
 }
