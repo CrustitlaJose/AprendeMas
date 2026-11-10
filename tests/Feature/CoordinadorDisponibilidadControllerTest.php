@@ -44,6 +44,28 @@ class CoordinadorDisponibilidadControllerTest extends TestCase
             ->assertUnauthorized();
     }
 
+    public function test_coordinator_can_open_the_dedicated_availability_view(): void
+    {
+        $coordinador = Usuario::create([
+            'correo' => 'coordinador@example.com',
+            'contrasena_hash' => Hash::make('password'),
+            'rol' => 'Coordinador',
+            'estado' => 'Activo',
+        ]);
+        $profesor = $this->createProfessor('ana@example.com', 'P001', 'Ana');
+        $fecha = now()->addDays(2)->toDateString();
+        $this->createDisponibilidad($profesor, $fecha, '09:00:00', '10:00:00');
+
+        $this->actingAs($coordinador)
+            ->get(route('coordinador.disponibilidades.index'))
+            ->assertOk()
+            ->assertViewIs('Coordinador.disponibilidades')
+            ->assertSee('Supervisión de disponibilidades')
+            ->assertSee('Ana Pérez')
+            ->assertDontSee('data-record-panel', false)
+            ->assertDontSee('id_profesor');
+    }
+
     public function test_non_coordinators_cannot_list_coordinator_availabilities(): void
     {
         $alumno = Usuario::create([

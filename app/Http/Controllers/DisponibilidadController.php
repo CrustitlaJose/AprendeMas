@@ -94,9 +94,13 @@ class DisponibilidadController extends Controller
             ->with('status', 'La disponibilidad se eliminó correctamente.');
     }
 
-    public function index(Request $request): JsonResponse
+    public function index(Request $request): JsonResponse|View
     {
         abort_unless($request->user()?->rol === 'Alumno', 403);
+
+        if (! $request->expectsJson()) {
+            return view('Alumno.agendar');
+        }
 
         $now = now();
         $availableSlots = static function (Builder|Relation $query) use ($now): void {

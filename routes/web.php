@@ -19,6 +19,8 @@ Route::middleware(['auth', 'role:Coordinador'])
     ->prefix('coordinador')
     ->name('coordinador.')
     ->group(function () {
+        Route::get('alumnos/create', [CoordinadorAlumnoController::class, 'create'])
+            ->name('alumnos.create');
         Route::apiResource('alumnos', CoordinadorAlumnoController::class)->except(['show']);
         Route::get('disponibilidades', [CoordinadorDisponibilidadController::class, 'index'])
             ->name('disponibilidades.index');

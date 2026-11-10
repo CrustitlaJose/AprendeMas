@@ -3,9 +3,7 @@
 @section('title', 'Mis asesorías')
 
 @section('content')
-    @include('partials.oferta-asesorias')
-
-    <section id="citas" class="mx-auto mt-10 max-w-7xl space-y-4" data-appointments-panel data-endpoint-url="{{ url('/alumno/asesorias') }}">
+    <section id="citas" class="mx-auto max-w-7xl space-y-4" data-appointments-panel data-endpoint-url="{{ url('/alumno/asesorias') }}">
         <header class="flex flex-col justify-between gap-4 sm:flex-row sm:items-end">
             <div>
                 <p class="text-xs font-semibold uppercase tracking-wider text-gray-500">Seguimiento</p>
