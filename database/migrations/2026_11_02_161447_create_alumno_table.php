@@ -16,7 +16,6 @@ return new class extends Migration
             $table->string('nombre');
             $table->string('apellidos');
             $table->string('telefono')->unique();
-            $table->string('estado');
         });
     }
 

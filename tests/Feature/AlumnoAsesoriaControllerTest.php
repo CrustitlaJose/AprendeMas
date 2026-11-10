@@ -114,6 +114,17 @@ class AlumnoAsesoriaControllerTest extends TestCase
             'id_disponibilidad' => $disponibilidad->id_disponibilidad,
             'estado' => 'Ocupado',
         ]);
+        $this->assertDatabaseHas('notificacion', [
+            'id_asesoria' => $response->json('data.id_asesoria'),
+            'id_usuario' => $alumno->id_usuario,
+            'tipo' => 'Agendamiento',
+        ]);
+        $this->assertDatabaseHas('notificacion', [
+            'id_asesoria' => $response->json('data.id_asesoria'),
+            'id_usuario' => $profesor->id_usuario,
+            'tipo' => 'Agendamiento',
+        ]);
+        $this->assertDatabaseCount('notificacion', 2);
 
         $otroUsuario = $this->createStudent('tercer-alumno@example.com')['usuario'];
         $this->actingAs($otroUsuario)
@@ -124,6 +135,7 @@ class AlumnoAsesoriaControllerTest extends TestCase
             ->assertStatus(409);
 
         $this->assertDatabaseCount('asesoria', 2);
+        $this->assertDatabaseCount('notificacion', 2);
     }
 
     public function test_student_cannot_book_an_unassigned_subject_or_when_no_room_is_available(): void
@@ -159,6 +171,8 @@ class AlumnoAsesoriaControllerTest extends TestCase
         ])
             ->assertUnprocessable()
             ->assertJsonValidationErrors('id_disponibilidad');
+
+        $this->assertDatabaseCount('notificacion', 0);
     }
 
     public function test_student_cannot_choose_an_aula_for_their_booking(): void
@@ -273,6 +287,17 @@ class AlumnoAsesoriaControllerTest extends TestCase
             'id_disponibilidad' => $disponibilidad->id_disponibilidad,
             'estado' => 'Disponible',
         ]);
+        $this->assertDatabaseHas('notificacion', [
+            'id_asesoria' => $asesoria->id_asesoria,
+            'id_usuario' => $alumno->id_usuario,
+            'tipo' => 'Cancelación',
+        ]);
+        $this->assertDatabaseHas('notificacion', [
+            'id_asesoria' => $asesoria->id_asesoria,
+            'id_usuario' => $profesor->id_usuario,
+            'tipo' => 'Cancelación',
+        ]);
+        $this->assertDatabaseCount('notificacion', 2);
     }
 
     public function test_student_cannot_cancel_another_students_appointment(): void
@@ -297,6 +322,7 @@ class AlumnoAsesoriaControllerTest extends TestCase
             'id_disponibilidad' => $disponibilidad->id_disponibilidad,
             'estado' => 'Ocupado',
         ]);
+        $this->assertDatabaseCount('notificacion', 0);
     }
 
     public function test_student_cannot_cancel_with_less_than_twelve_hours_of_notice(): void
@@ -321,6 +347,7 @@ class AlumnoAsesoriaControllerTest extends TestCase
             'id_disponibilidad' => $disponibilidad->id_disponibilidad,
             'estado' => 'Ocupado',
         ]);
+        $this->assertDatabaseCount('notificacion', 0);
     }
 
     /**

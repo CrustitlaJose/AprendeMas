@@ -26,9 +26,6 @@
 
     <form action="{{ route('coordinador.alumnos.store') }}" method="POST" class="grid gap-5 rounded-xl border border-gray-200 bg-white p-6 shadow-sm sm:grid-cols-2">
         @csrf
-        <label class="text-sm font-medium text-gray-700">Matrícula
-            <input name="matricula" value="{{ old('matricula') }}" required class="mt-1 w-full rounded-lg border border-gray-300 px-3 py-2" autocomplete="off">
-        </label>
         <label class="text-sm font-medium text-gray-700">Correo
             <input type="email" name="correo" value="{{ old('correo') }}" required class="mt-1 w-full rounded-lg border border-gray-300 px-3 py-2" autocomplete="email">
         </label>

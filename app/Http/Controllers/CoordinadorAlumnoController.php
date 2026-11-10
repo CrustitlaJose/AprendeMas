@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\Alumno;
 use App\Models\Usuario;
+use Carbon\Traits\ToStringFormat;
 use Illuminate\Contracts\View\View;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\JsonResponse;
@@ -53,7 +54,6 @@ class CoordinadorAlumnoController extends Controller
     {
         $validated = $request->validate([
             'correo' => ['required', 'email', 'unique:usuario,correo'],
-            'matricula' => ['required', 'unique:alumno,matricula'],
             'nombre' => ['required', 'string'],
             'apellidos' => ['required', 'string'],
             'telefono' => ['required', 'string', 'unique:alumno,telefono'],
@@ -70,7 +70,7 @@ class CoordinadorAlumnoController extends Controller
 
             $alumno = new Alumno;
             $alumno->id_usuario = $usuario->id_usuario;
-            $alumno->matricula = $validated['matricula'];
+            $alumno->matricula = date('y').'67'.sprintf('%04d', $usuario->id_usuario);
             $alumno->nombre = $validated['nombre'];
             $alumno->apellidos = $validated['apellidos'];
             $alumno->telefono = $validated['telefono'];
@@ -141,5 +141,20 @@ class CoordinadorAlumnoController extends Controller
         }
 
         return back()->with('status', 'La cuenta del alumno se desactivó.');
+    }
+
+    public function active(Request $request, int $id): JsonResponse|RedirectResponse
+    {
+        $alumno = Alumno::findorFail($id);
+
+        $alumno->usuario()->update(['estado' => 'Activo']);
+        $alumno->estado = 'Activo';
+        $alumno->save();
+
+        if ($request->expectsJson()) {
+            return response()->json(['message' => 'Alta lógica aplicada correctamente.']);
+        }
+
+        return back()->with('status', 'La cuenta del alumno se Activó.');
     }
 }

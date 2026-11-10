@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Events\DisponibilidadEliminada;
 use App\Models\Disponibilidad;
 use App\Models\Profesor;
 use App\Models\Usuario;
@@ -99,7 +100,24 @@ class ProfesorDisponibilidadController extends Controller
                 ->lockForUpdate()
                 ->firstOrFail();
 
-            $this->assertNotBooked($disponibilidad);
+            $asesorias = $disponibilidad->asesorias()
+                ->where('estado', 'Confirmada')
+                ->lockForUpdate()
+                ->get();
+
+            if ($asesorias->isEmpty() && $disponibilidad->estado !== 'Disponible') {
+                abort(409, 'No puedes eliminar una disponibilidad ocupada sin una asesoría confirmada.');
+            }
+
+            foreach ($asesorias as $asesoria) {
+                $asesoria->update(['estado' => 'Cancelada']);
+                DisponibilidadEliminada::dispatch($disponibilidad, $asesoria);
+            }
+
+            if ($asesorias->isEmpty()) {
+                DisponibilidadEliminada::dispatch($disponibilidad);
+            }
+
             $disponibilidad->delete();
         });
 

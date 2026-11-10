@@ -66,6 +66,12 @@ class ProfesorDisponibilidadControllerTest extends TestCase
         $this->assertDatabaseMissing('disponibilidad', [
             'id_disponibilidad' => $idDisponibilidad,
         ]);
+        $this->assertDatabaseHas('notificacion', [
+            'id_asesoria' => null,
+            'id_usuario' => $profesor->id_usuario,
+            'tipo' => 'Eliminación de disponibilidad',
+        ]);
+        $this->assertDatabaseCount('notificacion', 1);
     }
 
     public function test_professor_cannot_create_overlapping_availability_or_access_another_professors_slot(): void
@@ -99,7 +105,7 @@ class ProfesorDisponibilidadControllerTest extends TestCase
         $this->assertDatabaseCount('disponibilidad', 1);
     }
 
-    public function test_professor_cannot_update_or_delete_availability_with_an_associated_appointment(): void
+    public function test_professor_cannot_update_but_can_delete_availability_with_an_associated_appointment(): void
     {
         ['usuario' => $usuario, 'profesor' => $profesor] = $this->createProfessor('profesor@example.com');
         $alumnoUsuario = Usuario::create([
@@ -135,7 +141,7 @@ class ProfesorDisponibilidadControllerTest extends TestCase
             'modalidad' => 'Presencial',
             'estado' => 'Ocupado',
         ]);
-        Asesoria::create([
+        $asesoria = Asesoria::create([
             'id_alumno' => $alumno->id_alumno,
             'id_disponibilidad' => $disponibilidad->id_disponibilidad,
             'id_materia' => $materia->id_materia,
@@ -151,14 +157,27 @@ class ProfesorDisponibilidadControllerTest extends TestCase
             ->assertStatus(409);
 
         $this->deleteJson(route('profesor.api.disponibilidades.destroy', $disponibilidad->id_disponibilidad))
-            ->assertStatus(409);
+            ->assertNoContent();
 
-        $this->assertDatabaseHas('disponibilidad', [
+        $this->assertDatabaseMissing('disponibilidad', [
             'id_disponibilidad' => $disponibilidad->id_disponibilidad,
         ]);
         $this->assertDatabaseHas('asesoria', [
-            'id_disponibilidad' => $disponibilidad->id_disponibilidad,
+            'id_asesoria' => $asesoria->id_asesoria,
+            'id_disponibilidad' => null,
+            'estado' => 'Cancelada',
         ]);
+        $this->assertDatabaseHas('notificacion', [
+            'id_asesoria' => $asesoria->id_asesoria,
+            'id_usuario' => $alumnoUsuario->id_usuario,
+            'tipo' => 'Eliminación de disponibilidad',
+        ]);
+        $this->assertDatabaseHas('notificacion', [
+            'id_asesoria' => $asesoria->id_asesoria,
+            'id_usuario' => $usuario->id_usuario,
+            'tipo' => 'Eliminación de disponibilidad',
+        ]);
+        $this->assertDatabaseCount('notificacion', 2);
     }
 
     public function test_only_professors_can_access_their_availabilities(): void

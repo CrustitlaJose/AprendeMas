@@ -2,6 +2,8 @@
 
 namespace App\Http\Controllers;
 
+use App\Events\CitaAgendada;
+use App\Events\CitaCancelada;
 use App\Models\Alumno;
 use App\Models\Asesoria;
 use App\Models\Aula;
@@ -54,6 +56,7 @@ class AlumnoAsesoriaController extends Controller
             ]);
 
             $disponibilidad->update(['estado' => 'Ocupado']);
+            CitaAgendada::dispatch($asesoria);
 
             return $asesoria->load(['disponibilidad.profesor', 'materia', 'aula']);
         });
@@ -138,6 +141,7 @@ class AlumnoAsesoriaController extends Controller
 
             $asesoria->update(['estado' => 'Cancelada']);
             $disponibilidad->update(['estado' => 'Disponible']);
+            CitaCancelada::dispatch($asesoria);
 
             return $asesoria->refresh()->load(['disponibilidad.profesor', 'materia', 'aula']);
         });

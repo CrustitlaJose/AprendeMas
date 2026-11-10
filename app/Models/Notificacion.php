@@ -12,14 +12,6 @@ class Notificacion extends Model
 
     public $timestamps = false;
 
-    protected $fillable = [
-        'id_asesoria',
-        'id_usuario',
-        'mensaje',
-        'fecha_envio',
-        'tipo',
-    ];
-
     public function asesoria()
     {
         return $this->belongsTo(Asesoria::class, 'id_asesoria', 'id_asesoria');
