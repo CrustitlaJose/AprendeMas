@@ -17,7 +17,7 @@ class CoordinadorSeeder extends Seeder
 
         if (! is_string($correo) || $correo === '' || ! is_string($contrasena) || $contrasena === '') {
             throw new RuntimeException(
-                'Define COORDINATOR_EMAIL y COORDINATOR_PASSWORD antes de ejecutar CoordinadorSeeder.'
+                'Define COORDINADOR_EMAIL y COORDINADOR_PASSWORD antes de ejecutar CoordinadorSeeder.'
             );
         }
 

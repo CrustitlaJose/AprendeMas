@@ -11,7 +11,7 @@ return new class extends Migration
         Schema::create('cancelaciones', function (Blueprint $table) {
 
             $table->unsignedBigInteger('asesoria_id')->primary();
-            $table->foreign('asesoria_id')->references('id')->on('asesorias')->onDelete('cascade');
+            $table->foreign('asesoria_id')->references('id_asesoria')->on('asesoria')->onDelete('cascade');
             $table->text('motivo');
             $table->timestamp('fecha_hora_cancelacion');
             $table->enum('cancelado_por', ['alumno', 'profesor', 'coordinador']);
