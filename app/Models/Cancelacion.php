@@ -28,6 +28,6 @@ class Cancelacion extends Model
 
     public function asesoria()
     {
-        return $this->belongsTo(Asesoria::class);
+        return $this->belongsTo(Asesoria::class, 'asesoria_id', 'id_asesoria');
     }
 }
