@@ -2,7 +2,11 @@
 
 namespace Tests\Feature;
 
+use App\Models\Alumno;
+use App\Models\Asesoria;
+use App\Models\Aula;
 use App\Models\Disponibilidad;
+use App\Models\Materia;
 use App\Models\Profesor;
 use App\Models\Usuario;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -249,6 +253,80 @@ class DisponibilidadManagementTest extends TestCase
         $this->assertDatabaseMissing('disponibilidad', [
             'id_disponibilidad' => $disponibilidad->id_disponibilidad,
         ]);
+        $this->assertDatabaseHas('notificacion', [
+            'id_asesoria' => null,
+            'id_usuario' => $profesor->id_usuario,
+            'tipo' => 'Eliminación de disponibilidad',
+        ]);
+    }
+
+    public function test_professor_can_delete_availability_with_a_confirmed_appointment_and_notify_both_users(): void
+    {
+        $profesorUsuario = $this->crearProfesor('profesor@example.com');
+        $profesor = $profesorUsuario->profesor()->firstOrFail();
+        $alumnoUsuario = Usuario::create([
+            'correo' => 'alumno@example.com',
+            'contrasena_hash' => bcrypt('password'),
+            'rol' => 'Alumno',
+            'estado' => 'Activo',
+        ]);
+        $alumno = Alumno::create([
+            'id_usuario' => $alumnoUsuario->id_usuario,
+            'matricula' => 'A001',
+            'nombre' => 'Luis',
+            'apellidos' => 'Pérez',
+            'telefono' => '5550000001',
+            'estado' => 'Activo',
+        ]);
+        $materia = Materia::create([
+            'nombre_materia' => 'Matemáticas',
+            'descripcion' => 'Matemáticas',
+            'clave' => 'MAT-01',
+            'area' => 'Ciencias',
+        ]);
+        $aula = Aula::create([
+            'nombre_cubiculo' => 'C-01',
+            'capacidad' => '4',
+            'tipo' => 'Presencial',
+        ]);
+        $disponibilidad = Disponibilidad::create([
+            'id_profesor' => $profesor->id_profesor,
+            'fecha' => '2030-01-02',
+            'hora_inicio' => '09:00',
+            'hora_fin' => '10:00',
+            'modalidad' => 'Presencial',
+            'estado' => 'Ocupado',
+        ]);
+        $asesoria = Asesoria::create([
+            'id_alumno' => $alumno->id_alumno,
+            'id_disponibilidad' => $disponibilidad->id_disponibilidad,
+            'id_materia' => $materia->id_materia,
+            'id_aula' => $aula->id_aula,
+            'fecha_registro' => now(),
+            'estado' => 'Confirmada',
+        ]);
+
+        $this->actingAs($profesorUsuario)
+            ->delete(route('profesor.disponibilidades.destroy', $disponibilidad->id_disponibilidad))
+            ->assertRedirect(route('profesor.disponibilidades.index'))
+            ->assertSessionHas('status', 'La disponibilidad se eliminó correctamente.');
+
+        $this->assertDatabaseHas('asesoria', [
+            'id_asesoria' => $asesoria->id_asesoria,
+            'id_disponibilidad' => null,
+            'estado' => 'Cancelada',
+        ]);
+        $this->assertDatabaseHas('notificacion', [
+            'id_asesoria' => $asesoria->id_asesoria,
+            'id_usuario' => $alumnoUsuario->id_usuario,
+            'tipo' => 'Eliminación de disponibilidad',
+        ]);
+        $this->assertDatabaseHas('notificacion', [
+            'id_asesoria' => $asesoria->id_asesoria,
+            'id_usuario' => $profesorUsuario->id_usuario,
+            'tipo' => 'Eliminación de disponibilidad',
+        ]);
+        $this->assertDatabaseCount('notificacion', 2);
     }
 
     public function test_professor_cannot_update_another_professors_availability(): void

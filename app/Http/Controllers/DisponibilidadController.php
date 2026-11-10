@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Events\DisponibilidadEliminada;
 use App\Models\Disponibilidad;
 use App\Models\Materia;
 use App\Models\Profesor;
@@ -84,11 +85,34 @@ class DisponibilidadController extends Controller
     public function destroy(Request $request, int $disponibilidadId): RedirectResponse
     {
         $profesor = $this->profesorAutenticado($request);
-        $disponibilidad = $profesor->disponibilidad()
-            ->whereKey($disponibilidadId)
-            ->firstOrFail();
-        $this->validarEditable($disponibilidad);
-        $disponibilidad->delete();
+
+        DB::transaction(function () use ($profesor, $disponibilidadId): void {
+            $disponibilidad = $profesor->disponibilidad()
+                ->whereKey($disponibilidadId)
+                ->lockForUpdate()
+                ->firstOrFail();
+            $asesorias = $disponibilidad->asesorias()
+                ->where('estado', 'Confirmada')
+                ->lockForUpdate()
+                ->get();
+
+            if ($asesorias->isEmpty() && $disponibilidad->estado !== 'Disponible') {
+                throw ValidationException::withMessages([
+                    'disponibilidad' => 'No se puede eliminar una disponibilidad ocupada sin una asesoría confirmada.',
+                ]);
+            }
+
+            foreach ($asesorias as $asesoria) {
+                $asesoria->update(['estado' => 'Cancelada']);
+                DisponibilidadEliminada::dispatch($disponibilidad, $asesoria);
+            }
+
+            if ($asesorias->isEmpty()) {
+                DisponibilidadEliminada::dispatch($disponibilidad);
+            }
+
+            $disponibilidad->delete();
+        });
 
         return redirect()->route('profesor.disponibilidades.index')
             ->with('status', 'La disponibilidad se eliminó correctamente.');
