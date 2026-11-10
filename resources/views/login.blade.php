@@ -11,7 +11,7 @@
     <div class="bg-white p-8 rounded-xl shadow-lg w-full max-w-md border border-gray-200">
         <div class="text-center mb-8">
             <h1 class="text-4xl font-bold text-blue-900 mb-2">Aprende+</h1>
-            <p class="text-gray-500">Centro de Asesorías ITZ</p>
+            <p class="text-gray-500">Centro de Asesorías </p>
         </div>
 
         <form action="{{ route('login.post') }}" method="POST">

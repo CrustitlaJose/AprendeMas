@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 
@@ -50,5 +51,11 @@ class Usuario extends Authenticatable
     public function coordinador()
     {
         return $this->hasMany(Coordinador::class, 'id_usuario', 'id_usuario');
+    }
+
+    public function notificaciones(): HasMany
+    {
+        return $this->hasMany(Notificacion::class, 'id_usuario', 'id_usuario')
+            ->orderByDesc('fecha_envio');
     }
 }

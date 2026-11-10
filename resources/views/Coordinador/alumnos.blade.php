@@ -82,10 +82,16 @@
                                 <div class="flex justify-end gap-3">
                                     <button type="button" onclick="document.getElementById('modal-{{ $formId }}').showModal()" class="font-semibold text-[#1F4E78] hover:text-[#193f61]">Editar</button>
                                     @if (($alumno->usuario?->estado ?? $alumno->estado) === 'Activo')
-                                        <form action="{{ route('coordinador.alumnos.destroy', $alumno->id_alumno) }}" method="POST" onsubmit="return confirm('¿Desactivar la cuenta de este alumno?')">
+                                        <form action="{{ route('coordinador.alumnos.destroy', $alumno->id_alumno) }}" method="POST" data-confirm-title="¿Dar de baja a este alumno?" data-confirm-message="La cuenta del alumno se desactivará y ya no podrá acceder al sistema." data-confirm-label="Sí, dar de baja">
                                             @csrf
                                             @method('DELETE')
                                             <button class="font-semibold text-[#DC3545] hover:text-red-800">Dar de baja</button>
+                                        </form>
+                                    @else
+                                        <form action="{{ route('coordinador.alumnos.active', $alumno->id_alumno) }}" method="POST">
+                                            @csrf
+                                            @method('PATCH')
+                                            <button class="font-semibold text-green-700 hover:text-green-800">Dar de alta</button>
                                         </form>
                                     @endif
                                 </div>
@@ -130,7 +136,7 @@
                         <input type="email" name="correo" value="{{ old('_form') === $formId ? old('correo') : $alumno->usuario?->correo }}" required class="mt-1 w-full rounded-lg border border-gray-300 px-3 py-2">
                     </label>
                     <label class="text-sm font-medium text-gray-700">Teléfono
-                        <input name="telefono" value="{{ old('_form') === $formId ? old('telefono') : $alumno->telefono }}" required class="mt-1 w-full rounded-lg border border-gray-300 px-3 py-2">
+                        <input type="tel" name="telefono" value="{{ old('_form') === $formId ? old('telefono') : $alumno->telefono }}" required inputmode="numeric" pattern="[0-9]{10}" minlength="10" maxlength="10" title="Ingresa exactamente 10 dígitos." class="mt-1 w-full rounded-lg border border-gray-300 px-3 py-2" autocomplete="tel">
                     </label>
                 </div>
                 <div class="sticky bottom-0 flex justify-end gap-3 border-t border-gray-200 bg-white px-6 py-4">

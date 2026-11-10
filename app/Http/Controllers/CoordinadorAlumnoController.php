@@ -56,7 +56,10 @@ class CoordinadorAlumnoController extends Controller
             'correo' => ['required', 'email', 'unique:usuario,correo'],
             'nombre' => ['required', 'string'],
             'apellidos' => ['required', 'string'],
-            'telefono' => ['required', 'string', 'unique:alumno,telefono'],
+            'telefono' => ['required', 'string', 'regex:/^[0-9]{10}$/', 'unique:alumno,telefono'],
+        ], [
+            'correo.email' => 'El correo debe tener un formato válido.',
+            'telefono.regex' => 'El teléfono debe contener exactamente 10 dígitos.',
         ]);
         $contrasenaTemporal = Str::random(16);
 
@@ -74,7 +77,6 @@ class CoordinadorAlumnoController extends Controller
             $alumno->nombre = $validated['nombre'];
             $alumno->apellidos = $validated['apellidos'];
             $alumno->telefono = $validated['telefono'];
-            $alumno->estado = 'Activo';
             $alumno->save();
 
             return $alumno;
@@ -104,8 +106,11 @@ class CoordinadorAlumnoController extends Controller
         $validated = $request->validate([
             'nombre' => ['sometimes', 'required', 'string'],
             'apellidos' => ['sometimes', 'required', 'string'],
-            'telefono' => ['sometimes', 'required', 'string', Rule::unique('alumno', 'telefono')->ignore($alumno->id_alumno, 'id_alumno')],
+            'telefono' => ['sometimes', 'required', 'string', 'regex:/^[0-9]{10}$/', Rule::unique('alumno', 'telefono')->ignore($alumno->id_alumno, 'id_alumno')],
             'correo' => ['sometimes', 'required', 'email', Rule::unique('usuario', 'correo')->ignore($alumno->id_usuario, 'id_usuario')],
+        ], [
+            'correo.email' => 'El correo debe tener un formato válido.',
+            'telefono.regex' => 'El teléfono debe contener exactamente 10 dígitos.',
         ]);
 
         DB::transaction(function () use ($validated, $alumno): void {
@@ -145,16 +150,18 @@ class CoordinadorAlumnoController extends Controller
 
     public function active(Request $request, int $id): JsonResponse|RedirectResponse
     {
-        $alumno = Alumno::findorFail($id);
+        $alumno = Alumno::findOrFail($id);
 
-        $alumno->usuario()->update(['estado' => 'Activo']);
-        $alumno->estado = 'Activo';
-        $alumno->save();
+        DB::transaction(function () use ($alumno): void {
+            $alumno->usuario()->update(['estado' => 'Activo']);
+            $alumno->estado = 'Activo';
+            $alumno->save();
+        });
 
         if ($request->expectsJson()) {
             return response()->json(['message' => 'Alta lógica aplicada correctamente.']);
         }
 
-        return back()->with('status', 'La cuenta del alumno se Activó.');
+        return back()->with('status', 'La cuenta del alumno se activó.');
     }
 }

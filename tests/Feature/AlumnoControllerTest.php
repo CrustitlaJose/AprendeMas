@@ -3,6 +3,7 @@
 namespace Tests\Feature;
 
 use App\Models\Alumno;
+use App\Models\Notificacion;
 use App\Models\Usuario;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
@@ -33,7 +34,33 @@ class AlumnoControllerTest extends TestCase
         $response->assertOk()
             ->assertSeeText('A00123456')
             ->assertSeeText('Ana Pérez López')
+            ->assertSeeText('Sin notificaciones')
+            ->assertDontSee('data-notifications-dropdown', false)
             ->assertDontSeeText('23090935');
+    }
+
+    public function test_student_page_displays_saved_notifications(): void
+    {
+        $usuario = Usuario::create([
+            'correo' => 'alumno@example.com',
+            'contrasena_hash' => bcrypt('password'),
+            'rol' => 'Alumno',
+            'estado' => 'Activo',
+        ]);
+        $notificacion = new Notificacion;
+        $notificacion->id_usuario = $usuario->id_usuario;
+        $notificacion->mensaje = 'La asesoría fue agendada.';
+        $notificacion->fecha_envio = '2026-11-10 10:00:00';
+        $notificacion->tipo = 'Agendamiento';
+        $notificacion->save();
+
+        $this->actingAs($usuario)
+            ->get(route('mis-asesorias'))
+            ->assertOk()
+            ->assertSee('data-notifications-dropdown', false)
+            ->assertSee('data-notification-indicator', false)
+            ->assertSeeText('Agendamiento')
+            ->assertSeeText('La asesoría fue agendada.');
     }
 
     public function test_student_cannot_access_coordinator_student_list(): void

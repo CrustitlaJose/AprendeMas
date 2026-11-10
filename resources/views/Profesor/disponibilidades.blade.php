@@ -123,7 +123,7 @@
                             <button type="submit" class="rounded-lg bg-[#1F4E78] px-4 py-2 text-sm font-semibold text-white transition hover:bg-[#193f61]">Guardar cambios</button>
                         </div>
                     </form>
-                    <form action="{{ route('profesor.disponibilidades.destroy', $disponibilidad->id_disponibilidad) }}" method="POST" class="border-t border-gray-100 px-5 py-4" onsubmit="return confirm('¿Eliminar esta disponibilidad?')">
+                    <form action="{{ route('profesor.disponibilidades.destroy', $disponibilidad->id_disponibilidad) }}" method="POST" class="border-t border-gray-100 px-5 py-4" data-confirm-title="¿Eliminar esta disponibilidad?" data-confirm-message="Este bloque dejará de estar disponible para los alumnos." data-confirm-label="Sí, eliminar disponibilidad">
                         @csrf
                         @method('DELETE')
                         <button type="submit" class="text-sm font-semibold text-red-700 hover:text-red-800">Eliminar disponibilidad</button>

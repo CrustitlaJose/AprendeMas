@@ -48,7 +48,6 @@ class CoordinadorProfesorController extends Controller
     {
         $validated = $request->validate([
             'correo' => ['required', 'email', 'unique:usuario,correo'],
-            'num_empleado' => ['required', 'unique:profesor,num_empleado'],
             'nombre' => ['required', 'string'],
             'apellidos' => ['required', 'string'],
             'departamento' => ['required', 'string'],
@@ -68,7 +67,7 @@ class CoordinadorProfesorController extends Controller
 
             $profesor = new Profesor;
             $profesor->id_usuario = $usuario->id_usuario;
-            $profesor->num_empleado = $validated['num_empleado'];
+            $profesor->num_empleado = 'EMP-'.sprintf('%04d', $usuario->id_usuario);
             $profesor->nombre = $validated['nombre'];
             $profesor->apellidos = $validated['apellidos'];
             $profesor->departamento = $validated['departamento'];

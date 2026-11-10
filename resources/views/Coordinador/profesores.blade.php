@@ -40,9 +40,6 @@
         <form action="{{ route('coordinador.profesores.store') }}" method="POST" class="grid gap-4 border-t border-gray-100 p-6 sm:grid-cols-2 lg:grid-cols-3">
             @csrf
             <input type="hidden" name="_form" value="profesor-create">
-            <label class="text-sm font-medium text-gray-700">Número de empleado
-                <input name="num_empleado" value="{{ old('num_empleado') }}" required class="mt-1 w-full rounded-lg border border-gray-300 px-3 py-2" autocomplete="off">
-            </label>
             <label class="text-sm font-medium text-gray-700">Nombre
                 <input name="nombre" value="{{ old('nombre') }}" required class="mt-1 w-full rounded-lg border border-gray-300 px-3 py-2" autocomplete="given-name">
             </label>
@@ -133,7 +130,7 @@
                                 <div class="flex justify-end gap-3">
                                     <button type="button" onclick="document.getElementById('modal-{{ $formId }}').showModal()" class="font-semibold text-[#1F4E78] hover:text-[#193f61]">Editar</button>
                                     @if ($profesor->usuario?->estado === 'Activo')
-                                        <form action="{{ route('coordinador.profesores.destroy', $profesor->id_profesor) }}" method="POST" onsubmit="return confirm('¿Desactivar la cuenta de este profesor?')">
+                                        <form action="{{ route('coordinador.profesores.destroy', $profesor->id_profesor) }}" method="POST" data-confirm-title="¿Dar de baja a este profesor?" data-confirm-message="La cuenta del profesor se desactivará y ya no podrá acceder al sistema." data-confirm-label="Sí, dar de baja">
                                             @csrf
                                             @method('DELETE')
                                             <button class="font-semibold text-[#DC3545] hover:text-red-800">Dar de baja</button>
