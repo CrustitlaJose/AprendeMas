@@ -36,7 +36,7 @@
             <input name="apellidos" value="{{ old('apellidos') }}" required class="mt-1 w-full rounded-lg border border-gray-300 px-3 py-2" autocomplete="family-name">
         </label>
         <label class="text-sm font-medium text-gray-700">Teléfono
-            <input type="tel" name="telefono" value="{{ old('telefono') }}" required class="mt-1 w-full rounded-lg border border-gray-300 px-3 py-2" autocomplete="tel">
+            <input type="tel" name="telefono" value="{{ old('telefono') }}" required inputmode="numeric" pattern="[0-9]{10}" minlength="10" maxlength="10" title="Ingresa exactamente 10 dígitos." class="mt-1 w-full rounded-lg border border-gray-300 px-3 py-2" autocomplete="tel">
         </label>
         <p class="self-end text-xs text-gray-500">Se generará una contraseña temporal, que se mostrará una sola vez al guardar.</p>
         <div class="flex justify-end gap-3 border-t border-gray-100 pt-5 sm:col-span-2">

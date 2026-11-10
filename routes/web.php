@@ -6,6 +6,7 @@ use App\Http\Controllers\CoordinadorAlumnoController;
 use App\Http\Controllers\CoordinadorDisponibilidadController;
 use App\Http\Controllers\CoordinadorProfesorController;
 use App\Http\Controllers\DisponibilidadController;
+use App\Http\Controllers\NotificacionController;
 use App\Http\Controllers\ProfesorDisponibilidadController;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
@@ -21,6 +22,8 @@ Route::middleware(['auth', 'role:Coordinador'])
     ->group(function () {
         Route::get('alumnos/create', [CoordinadorAlumnoController::class, 'create'])
             ->name('alumnos.create');
+        Route::patch('alumnos/{id}/active', [CoordinadorAlumnoController::class, 'active'])
+            ->name('alumnos.active');
         Route::apiResource('alumnos', CoordinadorAlumnoController::class)->except(['show']);
         Route::get('disponibilidades', [CoordinadorDisponibilidadController::class, 'index'])
             ->name('disponibilidades.index');
@@ -91,6 +94,11 @@ Route::post('/logout', [AuthController::class, 'logout'])
 |--------------------------------------------------------------------------
 */
 Route::middleware('auth')->group(function () {
+
+    Route::get('/notificaciones', [NotificacionController::class, 'index'])
+        ->name('notificaciones.index');
+    Route::post('/notificaciones/leer', [NotificacionController::class, 'markAsRead'])
+        ->name('notificaciones.read');
 
     // --- Vistas y Paneles Generales ---
     Route::get('/mis-asesorias', function (Request $request) {

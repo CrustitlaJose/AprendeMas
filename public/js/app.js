@@ -1,4 +1,5 @@
 const csrfToken = document.querySelector('meta[name="csrf-token"]')?.content;
+let pendingConfirmationAction = null;
 
 function showMessage(element, message, type = 'error') {
     if (!element) {
@@ -22,6 +23,81 @@ function clearMessage(element) {
 
     element.textContent = '';
     element.classList.add('hidden');
+}
+
+function requestConfirmation({ title, message, confirmLabel, onConfirm }) {
+    const dialog = document.querySelector('[data-confirmation-modal]');
+
+    if (!dialog) {
+        throw new Error('No se encontró el modal de confirmación.');
+    }
+
+    dialog.querySelector('[data-confirm-title]').textContent = title;
+    dialog.querySelector('[data-confirm-message]').textContent = message;
+    dialog.querySelector('[data-confirm-accept]').textContent = confirmLabel;
+    pendingConfirmationAction = onConfirm;
+    dialog.showModal();
+}
+
+function initConfirmationModal() {
+    const dialog = document.querySelector('[data-confirmation-modal]');
+    const cancelButton = dialog.querySelector('[data-confirm-cancel]');
+    const confirmButton = dialog.querySelector('[data-confirm-accept]');
+
+    document.addEventListener('submit', (event) => {
+        const form = event.target;
+
+        if (!(form instanceof HTMLFormElement) || !form.hasAttribute('data-confirm-title')) {
+            return;
+        }
+
+        if (form.dataset.confirmed === 'true') {
+            delete form.dataset.confirmed;
+
+            return;
+        }
+
+        event.preventDefault();
+        const submitter = event.submitter;
+
+        requestConfirmation({
+            title: form.dataset.confirmTitle,
+            message: form.dataset.confirmMessage,
+            confirmLabel: form.dataset.confirmLabel,
+            onConfirm: () => {
+                form.dataset.confirmed = 'true';
+
+                if (submitter instanceof HTMLButtonElement || submitter instanceof HTMLInputElement) {
+                    form.requestSubmit(submitter);
+                } else {
+                    form.requestSubmit();
+                }
+            },
+        });
+    });
+
+    cancelButton.addEventListener('click', () => {
+        pendingConfirmationAction = null;
+        dialog.close();
+    });
+
+    confirmButton.addEventListener('click', () => {
+        const action = pendingConfirmationAction;
+        pendingConfirmationAction = null;
+        dialog.close();
+        action?.();
+    });
+
+    dialog.addEventListener('cancel', () => {
+        pendingConfirmationAction = null;
+    });
+
+    dialog.addEventListener('click', (event) => {
+        if (event.target === dialog) {
+            pendingConfirmationAction = null;
+            dialog.close();
+        }
+    });
 }
 
 function errorMessage(payload, status) {
@@ -276,6 +352,7 @@ function initOfferPanel(root) {
             bookingPanel.hidden = true;
             bookingForm.reset();
             document.querySelector('[data-appointments-panel]')?.dispatchEvent(new Event('appointments:reload'));
+            refreshNotificationDropdown();
         } catch (requestError) {
             showMessage(bookingError, requestError.message);
         }
@@ -473,30 +550,180 @@ function initAppointments(root) {
 
     root.addEventListener('appointments:reload', loadAppointments);
 
-    root.addEventListener('click', async (event) => {
+    root.addEventListener('click', (event) => {
         const button = event.target.closest('[data-cancel-appointment]');
 
-        if (!button || !window.confirm('¿Deseas cancelar esta asesoría?')) {
+        if (!button) {
             return;
         }
 
-        const card = button.closest('article');
-        clearMessage(card.querySelector('[data-item-error]'));
+        requestConfirmation({
+            title: '¿Confirmar cancelación de asesoría?',
+            message: 'Esta acción cancelará la asesoría y notificará a la contraparte.',
+            confirmLabel: 'Sí, cancelar asesoría',
+            onConfirm: async () => {
+                const card = button.closest('article');
+                clearMessage(card.querySelector('[data-item-error]'));
 
-        try {
-            const response = await requestJson(`${root.dataset.endpointUrl}/${encodeURIComponent(button.dataset.recordId)}`, {
-                method: 'DELETE',
-            });
-            showMessage(message, response.message ?? 'La asesoría fue cancelada.', 'success');
-            await loadAppointments();
-        } catch (requestError) {
-            showMessage(card.querySelector('[data-item-error]'), requestError.message);
-        }
+                try {
+                    const response = await requestJson(`${root.dataset.endpointUrl}/${encodeURIComponent(button.dataset.recordId)}`, {
+                        method: 'DELETE',
+                    });
+                    showMessage(message, response.message ?? 'La asesoría fue cancelada.', 'success');
+                    refreshNotificationDropdown();
+                    await loadAppointments();
+                } catch (requestError) {
+                    showMessage(card.querySelector('[data-item-error]'), requestError.message);
+                }
+            },
+        });
     });
 
     loadAppointments();
 }
 
+function initNotificationDropdown(root) {
+    const error = root.querySelector('[data-notifications-error]');
+    const list = root.querySelector('[data-notifications-list]');
+    const summary = root.querySelector('summary');
+    let markingAsRead = false;
+    let refreshVersion = 0;
+
+    function renderNotifications(notificaciones) {
+        list.replaceChildren();
+
+        if (notificaciones.length === 0) {
+            const emptyMessage = document.createElement('p');
+            emptyMessage.className = 'px-4 py-6 text-center text-sm text-gray-500';
+            emptyMessage.textContent = 'Sin notificaciones';
+            list.append(emptyMessage);
+
+            return;
+        }
+
+        notificaciones.forEach((notificacion) => {
+            const article = document.createElement('article');
+            article.className = 'border-b border-gray-100 px-4 py-3 last:border-b-0';
+
+            if (!notificacion.leida) {
+                article.classList.add('bg-blue-50');
+            }
+
+            const title = document.createElement('h3');
+            title.className = 'text-sm font-bold';
+            title.textContent = String(notificacion.tipo ?? '');
+
+            const message = document.createElement('p');
+            message.className = 'mt-1 text-sm text-gray-600';
+            message.textContent = String(notificacion.mensaje ?? '');
+
+            const time = document.createElement('p');
+            time.className = 'mt-2 text-xs text-gray-500';
+            time.textContent = String(notificacion.fecha_relativa ?? '');
+
+            article.append(title, message, time);
+            list.append(article);
+        });
+    }
+
+    function renderIndicator(hasUnread) {
+        let indicator = root.querySelector('[data-notification-indicator]');
+
+        if (hasUnread && !indicator) {
+            indicator = document.createElement('span');
+            indicator.dataset.notificationIndicator = '';
+            indicator.className = 'absolute right-1 top-1 h-3 w-3 animate-pulse rounded-full bg-red-500 ring-2 ring-[#1e3a5f]';
+            indicator.setAttribute('aria-hidden', 'true');
+            summary.append(indicator);
+        } else if (!hasUnread) {
+            indicator?.remove();
+        }
+    }
+
+    async function refreshNotifications() {
+        if (markingAsRead) {
+            return;
+        }
+
+        const requestVersion = ++refreshVersion;
+        const payload = await requestJson(root.dataset.listUrl);
+
+        if (!payload || !Array.isArray(payload.notificaciones) || !Number.isInteger(payload.sin_leer)) {
+            throw new Error('La respuesta del servidor no contiene notificaciones válidas.');
+        }
+
+        if (requestVersion !== refreshVersion || markingAsRead) {
+            return;
+        }
+
+        renderNotifications(payload.notificaciones);
+        renderIndicator(payload.sin_leer > 0);
+        clearMessage(error);
+    }
+
+    async function markNotificationsAsRead() {
+        const indicator = root.querySelector('[data-notification-indicator]');
+
+        if (!root.open || !indicator || markingAsRead) {
+            return;
+        }
+
+        markingAsRead = true;
+        refreshVersion++;
+        clearMessage(error);
+
+        try {
+            await requestJson(root.dataset.readUrl, {
+                method: 'POST',
+            });
+            indicator.remove();
+            list.querySelectorAll('.bg-blue-50').forEach((item) => item.classList.remove('bg-blue-50'));
+        } catch (requestError) {
+            showMessage(error, requestError.message);
+        } finally {
+            markingAsRead = false;
+        }
+    }
+
+    function refreshAndReportErrors() {
+        refreshNotifications().catch((requestError) => {
+            showMessage(error, requestError.message);
+        });
+    }
+
+    root.addEventListener('toggle', markNotificationsAsRead);
+    root.addEventListener('notifications:refresh', refreshAndReportErrors);
+    document.addEventListener('click', (event) => {
+        if (!root.contains(event.target)) {
+            root.open = false;
+        }
+    });
+    document.addEventListener('keydown', (event) => {
+        if (event.key === 'Escape') {
+            root.open = false;
+        }
+    });
+    document.addEventListener('visibilitychange', () => {
+        if (!document.hidden) {
+            refreshAndReportErrors();
+        }
+    });
+
+    window.setInterval(() => {
+        if (!document.hidden) {
+            refreshAndReportErrors();
+        }
+    }, 5000);
+
+    refreshAndReportErrors();
+}
+
+function refreshNotificationDropdown() {
+    document.querySelector('[data-notifications-dropdown]')?.dispatchEvent(new Event('notifications:refresh'));
+}
+
 document.querySelectorAll('[data-offer-panel]').forEach(initOfferPanel);
 document.querySelectorAll('[data-record-panel]').forEach(initRecordPanel);
 document.querySelectorAll('[data-appointments-panel]').forEach(initAppointments);
+document.querySelectorAll('[data-notifications-dropdown]').forEach(initNotificationDropdown);
+initConfirmationModal();

@@ -175,6 +175,152 @@ class CoordinadorAlumnoControllerTest extends TestCase
             ->assertDontSee('Guardar alumno');
     }
 
+    public function test_inactive_student_row_offers_the_reactivation_action(): void
+    {
+        $coordinador = Usuario::create([
+            'correo' => 'coordinador@example.com',
+            'contrasena_hash' => Hash::make('password'),
+            'rol' => 'Coordinador',
+            'estado' => 'Activo',
+        ]);
+        $usuarioAlumno = Usuario::create([
+            'correo' => 'ana@example.com',
+            'contrasena_hash' => Hash::make('password'),
+            'rol' => 'Alumno',
+            'estado' => 'Inactivo',
+        ]);
+        $alumno = new Alumno([
+            'id_usuario' => $usuarioAlumno->id_usuario,
+            'matricula' => 'A00123456',
+            'nombre' => 'Ana',
+            'apellidos' => 'Pérez López',
+            'telefono' => '5551234567',
+        ]);
+        $alumno->estado = 'Inactivo';
+        $alumno->save();
+
+        $this->actingAs($coordinador)
+            ->get(route('coordinador.alumnos.index'))
+            ->assertOk()
+            ->assertSee('Dar de alta')
+            ->assertDontSee('Dar de baja');
+    }
+
+    public function test_coordinator_can_reactivate_an_inactive_student(): void
+    {
+        $coordinador = Usuario::create([
+            'correo' => 'coordinador@example.com',
+            'contrasena_hash' => Hash::make('password'),
+            'rol' => 'Coordinador',
+            'estado' => 'Activo',
+        ]);
+        $usuarioAlumno = Usuario::create([
+            'correo' => 'ana@example.com',
+            'contrasena_hash' => Hash::make('password'),
+            'rol' => 'Alumno',
+            'estado' => 'Inactivo',
+        ]);
+        $alumno = new Alumno([
+            'id_usuario' => $usuarioAlumno->id_usuario,
+            'matricula' => 'A00123456',
+            'nombre' => 'Ana',
+            'apellidos' => 'Pérez López',
+            'telefono' => '5551234567',
+        ]);
+        $alumno->estado = 'Inactivo';
+        $alumno->save();
+
+        $this->actingAs($coordinador)
+            ->patchJson(route('coordinador.alumnos.active', $alumno->id_alumno))
+            ->assertOk()
+            ->assertJsonPath('message', 'Alta lógica aplicada correctamente.');
+
+        $this->assertDatabaseHas('usuario', [
+            'id_usuario' => $usuarioAlumno->id_usuario,
+            'estado' => 'Activo',
+        ]);
+        $this->assertDatabaseHas('alumno', [
+            'id_alumno' => $alumno->id_alumno,
+            'estado' => 'Activo',
+        ]);
+    }
+
+    public function test_student_registration_rejects_phone_numbers_without_exactly_ten_digits(): void
+    {
+        $coordinador = Usuario::create([
+            'correo' => 'coordinador@example.com',
+            'contrasena_hash' => Hash::make('password'),
+            'rol' => 'Coordinador',
+            'estado' => 'Activo',
+        ]);
+
+        $this->actingAs($coordinador);
+
+        foreach (['123456789', '12345678901', '12345abcde'] as $index => $telefono) {
+            $this->postJson('/coordinador/alumnos', [
+                'correo' => "alumno{$index}@example.com",
+                'nombre' => 'Ana',
+                'apellidos' => 'Pérez',
+                'telefono' => $telefono,
+            ])
+                ->assertStatus(422)
+                ->assertJsonValidationErrors('telefono');
+        }
+    }
+
+    public function test_student_registration_rejects_invalid_email_addresses(): void
+    {
+        $coordinador = Usuario::create([
+            'correo' => 'coordinador@example.com',
+            'contrasena_hash' => Hash::make('password'),
+            'rol' => 'Coordinador',
+            'estado' => 'Activo',
+        ]);
+
+        $this->actingAs($coordinador)
+            ->postJson('/coordinador/alumnos', [
+                'correo' => 'esto-no-es-un-correo',
+                'nombre' => 'Ana',
+                'apellidos' => 'Pérez',
+                'telefono' => '5551234567',
+            ])
+            ->assertStatus(422)
+            ->assertJsonValidationErrors('correo');
+    }
+
+    public function test_student_update_rejects_invalid_phone_and_email_values(): void
+    {
+        $coordinador = Usuario::create([
+            'correo' => 'coordinador@example.com',
+            'contrasena_hash' => Hash::make('password'),
+            'rol' => 'Coordinador',
+            'estado' => 'Activo',
+        ]);
+        $usuarioAlumno = Usuario::create([
+            'correo' => 'ana@example.com',
+            'contrasena_hash' => Hash::make('password'),
+            'rol' => 'Alumno',
+            'estado' => 'Activo',
+        ]);
+        $alumno = new Alumno([
+            'id_usuario' => $usuarioAlumno->id_usuario,
+            'matricula' => 'A00123456',
+            'nombre' => 'Ana',
+            'apellidos' => 'Pérez López',
+            'telefono' => '5551234567',
+        ]);
+        $alumno->estado = 'Activo';
+        $alumno->save();
+
+        $this->actingAs($coordinador)
+            ->patchJson(route('coordinador.alumnos.update', $alumno->id_alumno), [
+                'correo' => 'no-es-un-correo',
+                'telefono' => '123456789',
+            ])
+            ->assertStatus(422)
+            ->assertJsonValidationErrors(['correo', 'telefono']);
+    }
+
     public function test_coordinator_can_open_the_dedicated_student_registration_view(): void
     {
         $coordinador = Usuario::create([
@@ -191,5 +337,23 @@ class CoordinadorAlumnoControllerTest extends TestCase
             ->assertSee('Registrar alumno')
             ->assertSee('name="matricula"', false)
             ->assertSee('Guardar alumno');
+    }
+
+    public function test_student_registration_form_requires_email_and_exactly_ten_phone_digits(): void
+    {
+        $coordinador = Usuario::create([
+            'correo' => 'coordinador@example.com',
+            'contrasena_hash' => Hash::make('password'),
+            'rol' => 'Coordinador',
+            'estado' => 'Activo',
+        ]);
+
+        $this->actingAs($coordinador)
+            ->get(route('coordinador.alumnos.create'))
+            ->assertOk()
+            ->assertSee('type="email" name="correo"', false)
+            ->assertSee('type="tel" name="telefono"', false)
+            ->assertSee('pattern="[0-9]{10}"', false)
+            ->assertSee('minlength="10" maxlength="10"', false);
     }
 }

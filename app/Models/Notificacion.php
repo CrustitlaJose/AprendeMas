@@ -12,6 +12,14 @@ class Notificacion extends Model
 
     public $timestamps = false;
 
+    protected function casts(): array
+    {
+        return [
+            'fecha_envio' => 'datetime',
+            'leida' => 'boolean',
+        ];
+    }
+
     public function asesoria()
     {
         return $this->belongsTo(Asesoria::class, 'id_asesoria', 'id_asesoria');
