@@ -16,6 +16,11 @@ use Illuminate\Validation\Rule;
 
 class CoordinadorAlumnoController extends Controller
 {
+    public function create(): View
+    {
+        return view('Coordinador.create');
+    }
+
     // CU-12: Consultar todos los alumnos
     public function index(Request $request): JsonResponse|View
     {
@@ -85,7 +90,7 @@ class CoordinadorAlumnoController extends Controller
             ], 201);
         }
 
-        return redirect()->route('coordinador')->with([
+        return redirect()->route('coordinador.alumnos.index')->with([
             'status' => 'Alumno registrado exitosamente.',
             'contrasena_temporal' => $contrasenaTemporal,
         ]);

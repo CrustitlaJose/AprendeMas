@@ -39,7 +39,11 @@
                         'border-white text-white' => request()->routeIs('coordinador.profesores.*'),
                         'border-transparent text-blue-100 hover:text-white' => ! request()->routeIs('coordinador.profesores.*'),
                     ])>Profesores</a>
-                    <a href="{{ route('coordinador') }}#supervision" class="border-b-2 border-transparent px-4 py-3 text-sm font-semibold text-blue-100 transition hover:text-white">Disponibilidades</a>
+                    <a href="{{ route('coordinador.disponibilidades.index') }}" @class([
+                        'border-b-2 px-4 py-3 text-sm font-semibold transition',
+                        'border-white text-white' => request()->routeIs('coordinador.disponibilidades.*'),
+                        'border-transparent text-blue-100 hover:text-white' => ! request()->routeIs('coordinador.disponibilidades.*'),
+                    ])>Disponibilidades</a>
                 </div>
             </nav>
         @elseif (auth()->user()?->rol === 'Profesor')
@@ -55,8 +59,16 @@
         @else
             <nav aria-label="Navegación del alumno" class="border-t border-blue-800 bg-blue-900">
                 <div class="container mx-auto flex gap-1 overflow-x-auto px-4">
-                    <a href="{{ route('mis-asesorias') }}#citas" class="border-b-2 border-transparent px-4 py-3 text-sm font-semibold text-blue-100 transition hover:text-white">Mis asesorías</a>
-                    <a href="{{ route('mis-asesorias') }}#oferta" class="border-b-2 border-transparent px-4 py-3 text-sm font-semibold text-blue-100 transition hover:text-white">Disponibilidades</a>
+                    <a href="{{ route('mis-asesorias') }}" @class([
+                        'border-b-2 px-4 py-3 text-sm font-semibold transition',
+                        'border-white text-white' => request()->routeIs('mis-asesorias'),
+                        'border-transparent text-blue-100 hover:text-white' => ! request()->routeIs('mis-asesorias'),
+                    ])>Mis asesorías</a>
+                    <a href="{{ route('disponibilidades.index') }}" @class([
+                        'border-b-2 px-4 py-3 text-sm font-semibold transition',
+                        'border-white text-white' => request()->routeIs('disponibilidades.index'),
+                        'border-transparent text-blue-100 hover:text-white' => ! request()->routeIs('disponibilidades.index'),
+                    ])>Disponibilidades</a>
                 </div>
             </nav>
         @endif

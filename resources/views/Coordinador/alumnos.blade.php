@@ -10,21 +10,10 @@
             <h1 class="mt-1 text-3xl font-bold text-[#212529]">Gestión de alumnos</h1>
             <p class="mt-2 text-sm text-gray-600">Consulta y administra los expedientes de alumnos.</p>
         </div>
-        <span class="text-sm text-gray-500">Catálogo de alumnos</span>
+        <a href="{{ route('coordinador.alumnos.create') }}" class="inline-flex items-center justify-center rounded-lg bg-[#1F4E78] px-5 py-3 text-sm font-semibold text-white shadow-sm transition hover:bg-[#193f61] focus:outline-none focus:ring-2 focus:ring-[#1F4E78] focus:ring-offset-2">
+            <span class="mr-2 text-lg leading-none">+</span> Registrar alumno
+        </a>
     </header>
-
-    <section id="supervision" class="space-y-4 rounded-xl border border-gray-200 bg-white p-5 shadow-sm" data-record-panel data-endpoint-url="{{ url('/coordinador/disponibilidades') }}" data-record-label="disponibilidades">
-        <div class="flex items-center justify-between gap-4">
-            <div>
-                <h2 class="text-lg font-semibold text-gray-900">Supervisión de disponibilidades</h2>
-                <p class="mt-1 text-sm text-gray-600">Consulta las disponibilidades registradas.</p>
-            </div>
-            <button type="button" data-reload-records class="rounded-lg border border-gray-300 px-3 py-2 text-sm font-semibold text-gray-700 hover:bg-gray-50">Actualizar</button>
-        </div>
-        <p data-load-state class="text-sm text-gray-500" role="status">Cargando disponibilidades…</p>
-        <div data-record-error class="hidden rounded-lg border border-red-200 bg-red-50 p-4 text-sm text-red-800" role="alert"></div>
-        <div data-record-list class="grid gap-4 md:grid-cols-2 xl:grid-cols-3"></div>
-    </section>
 
     @if (session('status'))
         <div class="rounded-lg border border-[#28A745]/30 bg-green-50 p-4 text-sm text-green-800" role="status">
@@ -45,35 +34,6 @@
             </ul>
         </div>
     @endif
-
-    <details class="rounded-lg border border-gray-200 bg-white" @if (old('_form') === 'alumno-create') open @endif>
-        <summary class="cursor-pointer list-none px-5 py-4 font-semibold text-[#212529]">
-            <span class="mr-2 text-lg">+</span> Registrar alumno
-        </summary>
-        <form action="{{ route('coordinador.alumnos.store') }}" method="POST" class="grid gap-4 border-t border-gray-100 p-6 sm:grid-cols-2 lg:grid-cols-3">
-            @csrf
-            <input type="hidden" name="_form" value="alumno-create">
-            <label class="text-sm font-medium text-gray-700">Matrícula
-                <input name="matricula" value="{{ old('matricula') }}" required class="mt-1 w-full rounded-lg border border-gray-300 px-3 py-2" autocomplete="off">
-            </label>
-            <label class="text-sm font-medium text-gray-700">Nombre
-                <input name="nombre" value="{{ old('nombre') }}" required class="mt-1 w-full rounded-lg border border-gray-300 px-3 py-2" autocomplete="given-name">
-            </label>
-            <label class="text-sm font-medium text-gray-700">Apellidos
-                <input name="apellidos" value="{{ old('apellidos') }}" required class="mt-1 w-full rounded-lg border border-gray-300 px-3 py-2" autocomplete="family-name">
-            </label>
-            <label class="text-sm font-medium text-gray-700">Correo
-                <input type="email" name="correo" value="{{ old('correo') }}" required class="mt-1 w-full rounded-lg border border-gray-300 px-3 py-2" autocomplete="email">
-            </label>
-            <label class="text-sm font-medium text-gray-700">Teléfono
-                <input type="tel" name="telefono" value="{{ old('telefono') }}" required class="mt-1 w-full rounded-lg border border-gray-300 px-3 py-2" autocomplete="tel">
-            </label>
-            <div class="flex items-end">
-                <button type="submit" class="w-full rounded-lg bg-[#1F4E78] px-4 py-2 font-semibold text-white transition hover:bg-[#193f61]">Guardar alumno</button>
-            </div>
-            <p class="text-xs text-gray-500 sm:col-span-2 lg:col-span-3">Se generará una contraseña temporal, que se mostrará una sola vez al guardar.</p>
-        </form>
-    </details>
 
     <section class="overflow-hidden rounded-xl border border-gray-200 bg-white shadow-sm">
         <div class="flex flex-col justify-between gap-4 border-b border-gray-200 p-5 sm:flex-row sm:items-center">

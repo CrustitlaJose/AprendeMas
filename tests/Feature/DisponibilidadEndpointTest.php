@@ -98,6 +98,40 @@ class DisponibilidadEndpointTest extends TestCase
         $this->assertCount(1, $response->json('data.0.disponibilidades'));
     }
 
+    public function test_student_sees_only_availability_search_on_the_disponibilidades_page(): void
+    {
+        $alumno = Usuario::create([
+            'correo' => 'alumno@example.com',
+            'contrasena_hash' => bcrypt('password'),
+            'rol' => 'Alumno',
+            'estado' => 'Activo',
+        ]);
+
+        $this->actingAs($alumno)
+            ->get(route('disponibilidades.index'))
+            ->assertOk()
+            ->assertViewIs('Alumno.agendar')
+            ->assertSee('data-offer-panel', false)
+            ->assertDontSee('data-appointments-panel', false)
+            ->assertDontSee('Seguimiento');
+    }
+
+    public function test_student_sees_only_appointments_on_the_mis_asesorias_page(): void
+    {
+        $alumno = Usuario::create([
+            'correo' => 'alumno@example.com',
+            'contrasena_hash' => bcrypt('password'),
+            'rol' => 'Alumno',
+            'estado' => 'Activo',
+        ]);
+
+        $this->actingAs($alumno)
+            ->get(route('mis-asesorias'))
+            ->assertOk()
+            ->assertSee('data-appointments-panel', false)
+            ->assertDontSee('data-offer-panel', false);
+    }
+
     public function test_guest_cannot_query_disponibilidades(): void
     {
         $this->getJson(route('disponibilidades.index'))->assertStatus(401);

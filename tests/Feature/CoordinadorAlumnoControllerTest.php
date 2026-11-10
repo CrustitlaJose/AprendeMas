@@ -115,7 +115,7 @@ class CoordinadorAlumnoControllerTest extends TestCase
                 'telefono' => '5551234567',
             ]);
 
-        $response->assertRedirect(route('coordinador'))
+        $response->assertRedirect(route('coordinador.alumnos.index'))
             ->assertSessionHas('status', 'Alumno registrado exitosamente.')
             ->assertSessionHas('contrasena_temporal');
 
@@ -132,11 +132,11 @@ class CoordinadorAlumnoControllerTest extends TestCase
             'estado' => 'Activo',
         ]);
 
-        $this->get(route('coordinador'))
+        $this->get(route('coordinador.alumnos.index'))
             ->assertOk()
             ->assertSee('A00123456')
             ->assertSee('Ana Pérez López')
-            ->assertSee('Contraseña temporal del alumno');
+            ->assertSee('Contraseña temporal');
     }
 
     public function test_coordinator_can_view_and_search_student_records(): void
@@ -169,6 +169,27 @@ class CoordinadorAlumnoControllerTest extends TestCase
             ->assertViewIs('Coordinador.alumnos')
             ->assertSee('A00123456')
             ->assertSee('Ana Pérez López')
-            ->assertSee('ana@example.com');
+            ->assertSee('ana@example.com')
+            ->assertSee('Registrar alumno')
+            ->assertDontSee('Supervisión de disponibilidades')
+            ->assertDontSee('Guardar alumno');
+    }
+
+    public function test_coordinator_can_open_the_dedicated_student_registration_view(): void
+    {
+        $coordinador = Usuario::create([
+            'correo' => 'coordinador@example.com',
+            'contrasena_hash' => Hash::make('password'),
+            'rol' => 'Coordinador',
+            'estado' => 'Activo',
+        ]);
+
+        $this->actingAs($coordinador)
+            ->get(route('coordinador.alumnos.create'))
+            ->assertOk()
+            ->assertViewIs('Coordinador.create')
+            ->assertSee('Registrar alumno')
+            ->assertSee('name="matricula"', false)
+            ->assertSee('Guardar alumno');
     }
 }
