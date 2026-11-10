@@ -55,15 +55,38 @@ class AlumnoAsesoriaControllerTest extends TestCase
             ->assertForbidden();
     }
 
+    public function test_booking_view_explains_that_the_room_is_assigned_automatically(): void
+    {
+        ['usuario' => $usuario] = $this->createStudent('alumno@example.com');
+
+        $this->actingAs($usuario)
+            ->get(route('mis-asesorias'))
+            ->assertOk()
+            ->assertSee('El sistema asignará automáticamente un cubículo disponible')
+            ->assertDontSee('name="id_aula"', false)
+            ->assertDontSee('Catálogo de aulas');
+    }
+
     public function test_student_can_book_an_available_slot_and_cannot_book_it_twice(): void
     {
         ['usuario' => $usuario, 'alumno' => $alumno] = $this->createStudent('alumno@example.com');
         ['alumno' => $otroAlumno] = $this->createStudent('otro@example.com');
         ['profesor' => $profesor, 'materia' => $materia] = $this->createProfessor('profesor@example.com');
-        $aula = $this->createAula();
+        ['profesor' => $otroProfesor] = $this->createProfessor('otro-profesor@example.com');
+        $aulaOcupada = $this->createAula('C-01');
+        $aulaDisponible = $this->createAula('C-02');
+        $fecha = now()->addDays(2)->toDateString();
+        $disponibilidadOcupada = $this->createDisponibilidad(
+            $otroProfesor,
+            $fecha,
+            '09:30:00',
+            '10:30:00',
+            'Ocupado'
+        );
+        $this->createAsesoria($otroAlumno, $disponibilidadOcupada, $materia, $aulaOcupada);
         $disponibilidad = $this->createDisponibilidad(
             $profesor,
-            now()->addDays(2)->toDateString(),
+            $fecha,
             '09:00:00',
             '10:00:00'
         );
@@ -72,19 +95,19 @@ class AlumnoAsesoriaControllerTest extends TestCase
             'id_alumno' => $otroAlumno->id_alumno,
             'id_disponibilidad' => $disponibilidad->id_disponibilidad,
             'id_materia' => $materia->id_materia,
-            'id_aula' => $aula->id_aula,
             'estado' => 'Cancelada',
         ]);
 
         $response->assertCreated()
             ->assertJsonPath('data.id_alumno', $alumno->id_alumno)
-            ->assertJsonPath('data.estado', 'Confirmada');
+            ->assertJsonPath('data.estado', 'Confirmada')
+            ->assertJsonPath('data.id_aula', $aulaDisponible->id_aula);
         $this->assertDatabaseHas('asesoria', [
             'id_asesoria' => $response->json('data.id_asesoria'),
             'id_alumno' => $alumno->id_alumno,
             'id_disponibilidad' => $disponibilidad->id_disponibilidad,
             'id_materia' => $materia->id_materia,
-            'id_aula' => $aula->id_aula,
+            'id_aula' => $aulaDisponible->id_aula,
             'estado' => 'Confirmada',
         ]);
         $this->assertDatabaseHas('disponibilidad', [
@@ -97,14 +120,13 @@ class AlumnoAsesoriaControllerTest extends TestCase
             ->postJson(route('alumno.asesorias.store'), [
                 'id_disponibilidad' => $disponibilidad->id_disponibilidad,
                 'id_materia' => $materia->id_materia,
-                'id_aula' => $aula->id_aula,
             ])
             ->assertStatus(409);
 
-        $this->assertDatabaseCount('asesoria', 1);
+        $this->assertDatabaseCount('asesoria', 2);
     }
 
-    public function test_student_cannot_book_an_unassigned_subject_or_an_occupied_room(): void
+    public function test_student_cannot_book_an_unassigned_subject_or_when_no_room_is_available(): void
     {
         ['usuario' => $usuario] = $this->createStudent('alumno@example.com');
         ['profesor' => $profesor, 'materia' => $materia] = $this->createProfessor('profesor@example.com');
@@ -117,7 +139,6 @@ class AlumnoAsesoriaControllerTest extends TestCase
             ->postJson(route('alumno.asesorias.store'), [
                 'id_disponibilidad' => $disponibilidad->id_disponibilidad,
                 'id_materia' => $otraMateria->id_materia,
-                'id_aula' => $aula->id_aula,
             ])
             ->assertUnprocessable()
             ->assertJsonValidationErrors('id_materia');
@@ -135,10 +156,56 @@ class AlumnoAsesoriaControllerTest extends TestCase
         $this->postJson(route('alumno.asesorias.store'), [
             'id_disponibilidad' => $disponibilidad->id_disponibilidad,
             'id_materia' => $materia->id_materia,
-            'id_aula' => $aula->id_aula,
         ])
             ->assertUnprocessable()
-            ->assertJsonValidationErrors('id_aula');
+            ->assertJsonValidationErrors('id_disponibilidad');
+    }
+
+    public function test_student_cannot_choose_an_aula_for_their_booking(): void
+    {
+        ['usuario' => $usuario] = $this->createStudent('alumno@example.com');
+        ['profesor' => $profesor, 'materia' => $materia] = $this->createProfessor('profesor@example.com');
+        $aula = $this->createAula();
+        $disponibilidad = $this->createDisponibilidad(
+            $profesor,
+            now()->addDays(2)->toDateString(),
+            '09:00:00',
+            '10:00:00'
+        );
+
+        $response = $this->actingAs($usuario)
+            ->postJson(route('alumno.asesorias.store'), [
+                'id_disponibilidad' => $disponibilidad->id_disponibilidad,
+                'id_materia' => $materia->id_materia,
+                'id_aula' => $aula->id_aula,
+            ]);
+
+        $response->assertUnprocessable()->assertJsonValidationErrors('id_aula');
+        $this->assertDatabaseCount('asesoria', 0);
+    }
+
+    public function test_virtual_availability_is_assigned_a_virtual_room(): void
+    {
+        ['usuario' => $usuario] = $this->createStudent('alumno@example.com');
+        ['profesor' => $profesor, 'materia' => $materia] = $this->createProfessor('profesor@example.com');
+        $this->createAula('C-01', 'Presencial');
+        $aulaVirtual = $this->createAula('V-01', 'Virtual');
+        $disponibilidad = $this->createDisponibilidad(
+            $profesor,
+            now()->addDays(2)->toDateString(),
+            '09:00:00',
+            '10:00:00',
+            'Disponible',
+            'Virtual'
+        );
+
+        $response = $this->actingAs($usuario)
+            ->postJson(route('alumno.asesorias.store'), [
+                'id_disponibilidad' => $disponibilidad->id_disponibilidad,
+                'id_materia' => $materia->id_materia,
+            ]);
+
+        $response->assertCreated()->assertJsonPath('data.id_aula', $aulaVirtual->id_aula);
     }
 
     public function test_student_can_update_their_booking_and_release_the_previous_slot(): void
@@ -151,13 +218,16 @@ class AlumnoAsesoriaControllerTest extends TestCase
         $disponibilidadAnterior = $this->createDisponibilidad($profesor, $fecha, '09:00:00', '10:00:00', 'Ocupado');
         $disponibilidadNueva = $this->createDisponibilidad($profesor, $fecha, '10:00:00', '11:00:00');
         $asesoria = $this->createAsesoria($alumno, $disponibilidadAnterior, $materia, $aulaAnterior);
-
-        $this->actingAs($usuario)
-            ->patchJson(route('alumno.asesorias.update', $asesoria->id_asesoria), [
-                'id_aula' => $aulaNueva->id_aula,
-            ])
-            ->assertOk()
-            ->assertJsonPath('data.id_disponibilidad', $disponibilidadAnterior->id_disponibilidad);
+        ['alumno' => $otroAlumno] = $this->createStudent('otro-alumno@example.com');
+        ['profesor' => $otroProfesor] = $this->createProfessor('otro-profesor@example.com');
+        $disponibilidadConAulaOcupada = $this->createDisponibilidad(
+            $otroProfesor,
+            $fecha,
+            '10:00:00',
+            '11:00:00',
+            'Ocupado'
+        );
+        $this->createAsesoria($otroAlumno, $disponibilidadConAulaOcupada, $materia, $aulaAnterior);
 
         $response = $this->actingAs($usuario)
             ->patchJson(route('alumno.asesorias.update', $asesoria->id_asesoria), [
@@ -311,12 +381,12 @@ class AlumnoAsesoriaControllerTest extends TestCase
         return ['usuario' => $usuario, 'profesor' => $profesor, 'materia' => $materia];
     }
 
-    private function createAula(string $nombre = 'C-01'): Aula
+    private function createAula(string $nombre = 'C-01', string $tipo = 'Presencial'): Aula
     {
         return Aula::create([
             'nombre_cubiculo' => $nombre,
             'capacidad' => '4',
-            'tipo' => 'Asesoría',
+            'tipo' => $tipo,
         ]);
     }
 

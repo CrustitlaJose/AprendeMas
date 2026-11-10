@@ -43,8 +43,8 @@ Route::middleware(['auth', 'role:Alumno'])
 |--------------------------------------------------------------------------
 */
 Route::middleware(['auth', 'role:Profesor'])
-    ->prefix('profesor')
-    ->name('profesor.')
+    ->prefix('api/profesor')
+    ->name('profesor.api.')
     ->group(function () {
         Route::apiResource('disponibilidades', ProfesorDisponibilidadController::class);
 

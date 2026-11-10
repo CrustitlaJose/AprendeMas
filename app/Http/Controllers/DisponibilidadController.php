@@ -9,6 +9,7 @@ use App\Models\ProfesorMateria;
 use Carbon\CarbonImmutable;
 use Illuminate\Contracts\View\View;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Database\Eloquent\Relations\Relation;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -21,7 +22,7 @@ class DisponibilidadController extends Controller
     {
         $profesor = $this->profesorAutenticado($request);
         $disponibilidades = $profesor->disponibilidad()
-            ->with('asesoria')
+            ->with('asesorias')
             ->orderBy('fecha')
             ->orderBy('hora_inicio')
             ->get();
@@ -98,7 +99,7 @@ class DisponibilidadController extends Controller
         abort_unless($request->user()?->rol === 'Alumno', 403);
 
         $now = now();
-        $availableSlots = static function (Builder $query) use ($now): void {
+        $availableSlots = static function (Builder|Relation $query) use ($now): void {
             $query->where('estado', 'Disponible')
                 ->where(function (Builder $query) use ($now): void {
                     $query->where('fecha', '>', $now->toDateString())
@@ -115,7 +116,7 @@ class DisponibilidadController extends Controller
             ->whereHas('profesor_materia.materia')
             ->with([
                 'profesor_materia.materia:id_materia,nombre_materia',
-                'disponibilidad' => static function (Builder $query) use ($availableSlots): void {
+                'disponibilidad' => static function (Builder|Relation $query) use ($availableSlots): void {
                     $query->select([
                         'id_disponibilidad',
                         'id_profesor',
@@ -230,7 +231,7 @@ class DisponibilidadController extends Controller
 
     private function validarEditable(Disponibilidad $disponibilidad): void
     {
-        if ($disponibilidad->estado !== 'Disponible' || $disponibilidad->asesoria()->exists()) {
+        if ($disponibilidad->estado !== 'Disponible' || $disponibilidad->asesorias()->exists()) {
             throw ValidationException::withMessages([
                 'disponibilidad' => 'No se puede modificar ni eliminar un horario ocupado o asociado a una asesoría.',
             ]);

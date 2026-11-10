@@ -19,7 +19,7 @@
             
             <div class="mb-5">
                 <label class="block text-gray-700 font-semibold mb-2">Número de Control / Usuario</label>
-                <input type="text" name="identificador" value="23090935" class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-900 focus:border-transparent transition" placeholder="Ej. 23090935">
+                <input type="text" name="identificador" class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-900 focus:border-transparent transition" placeholder="Ej. 23090935">
             </div>
 
             <div class="mb-6">

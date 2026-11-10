@@ -118,6 +118,12 @@ function formatDate(value) {
     }).format(date);
 }
 
+function formatTime(value) {
+    const [hours, minutes] = String(value ?? '').split(':');
+
+    return hours && minutes ? `${hours}:${minutes}` : '—';
+}
+
 function elementWithText(tagName, text, className = '') {
     const element = document.createElement(tagName);
     element.textContent = text;
@@ -253,11 +259,10 @@ function initOfferPanel(root) {
         const body = {
             id_disponibilidad: bookingForm.elements.id_disponibilidad.value,
             id_materia: bookingForm.elements.id_materia.value,
-            id_aula: bookingForm.elements.id_aula.value,
         };
 
-        if (!body.id_disponibilidad || !body.id_materia || !body.id_aula) {
-            showMessage(bookingError, 'La reserva requiere disponibilidad, materia y aula. El catálogo de aulas aún no está disponible.');
+        if (!body.id_disponibilidad || !body.id_materia) {
+            showMessage(bookingError, 'La reserva requiere disponibilidad y materia.');
 
             return;
         }
@@ -376,22 +381,49 @@ function initRecordPanel(root) {
     loadRecords();
 }
 
-function editableValues(record) {
-    return Object.entries(record).filter(([key, value]) => (
-        key !== 'id'
-        && key !== 'id_asesoria'
-        && !key.startsWith('id_')
-        && (value === null || ['string', 'number', 'boolean'].includes(typeof value))
-    ));
-}
-
 function appointmentCard(record) {
     const card = document.createElement('article');
     card.className = 'space-y-4 rounded-xl border border-gray-200 bg-white p-5 shadow-sm';
 
+    const availability = record.disponibilidad ?? {};
+    const teacher = availability.profesor ?? {};
+    const teacherName = [teacher.nombre, teacher.apellidos].filter(Boolean).join(' ');
     const appointmentId = record.id_asesoria;
-    card.append(elementWithText('h3', appointmentId === undefined ? 'Asesoría' : `Asesoría ${appointmentId}`, 'font-semibold text-gray-900'));
-    appendRecordDetails(card, record);
+    const header = document.createElement('div');
+    header.className = 'flex flex-wrap items-start justify-between gap-3';
+    header.append(elementWithText(
+        'h3',
+        teacherName ? `Asesoría con ${teacherName}` : 'Asesoría',
+        'font-semibold text-gray-900',
+    ));
+
+    const status = record.estado ?? 'Sin estado';
+    const statusClass = status === 'Confirmada'
+        ? 'bg-green-50 text-green-800'
+        : status === 'Cancelada'
+            ? 'bg-red-50 text-red-800'
+            : 'bg-gray-100 text-gray-700';
+    header.append(elementWithText('span', status, `rounded-full px-3 py-1 text-xs font-semibold ${statusClass}`));
+    card.append(header);
+
+    const details = document.createElement('dl');
+    details.className = 'grid gap-3 text-sm sm:grid-cols-2';
+    [
+        ['Materia', record.materia?.nombre_materia ?? '—'],
+        ['Fecha', formatDate(availability.fecha)],
+        ['Horario', `${formatTime(availability.hora_inicio)} a ${formatTime(availability.hora_fin)}`],
+        ['Modalidad', availability.modalidad ?? '—'],
+        ['Aula', record.aula?.nombre_cubiculo ?? '—'],
+    ].forEach(([label, value]) => {
+        const row = document.createElement('div');
+        row.className = 'rounded-lg bg-gray-50 p-3';
+        row.append(
+            elementWithText('dt', label, 'text-gray-500'),
+            elementWithText('dd', String(value), 'mt-1 font-medium text-gray-900'),
+        );
+        details.append(row);
+    });
+    card.append(details);
 
     const itemError = document.createElement('p');
     itemError.className = 'hidden rounded-lg border border-red-200 bg-red-50 p-3 text-sm text-red-800';
@@ -403,37 +435,13 @@ function appointmentCard(record) {
         return card;
     }
 
-    const fields = editableValues(record);
-    if (fields.length > 0) {
-        const form = document.createElement('form');
-        form.className = 'space-y-3 border-t border-gray-100 pt-4';
-        form.dataset.patchAppointment = '';
-        form.dataset.recordId = String(appointmentId);
-        form.append(elementWithText('p', 'Actualizar campos disponibles', 'text-sm font-semibold text-gray-700'));
-
-        fields.forEach(([key, value]) => {
-            const label = elementWithText('label', key.replaceAll('_', ' '), 'block text-sm font-medium capitalize text-gray-700');
-            const input = document.createElement('input');
-            input.name = key;
-            input.value = value === null ? '' : String(value);
-            input.className = 'mt-1 w-full rounded-lg border border-gray-300 px-3 py-2 text-sm';
-            input.autocomplete = 'off';
-            input.dataset.originalValue = input.value;
-            label.append(input);
-            form.append(label);
-        });
-
-        const update = elementWithText('button', 'Guardar cambios', 'rounded-lg bg-[#1F4E78] px-4 py-2 text-sm font-semibold text-white transition hover:bg-[#193f61]');
-        update.type = 'submit';
-        form.append(update);
-        card.append(form);
+    if (status === 'Confirmada') {
+        const cancel = elementWithText('button', 'Cancelar asesoría', 'rounded-lg border border-red-300 px-4 py-2 text-sm font-semibold text-red-700 transition hover:bg-red-50');
+        cancel.type = 'button';
+        cancel.dataset.cancelAppointment = '';
+        cancel.dataset.recordId = String(appointmentId);
+        card.append(cancel);
     }
-
-    const cancel = elementWithText('button', 'Cancelar asesoría', 'rounded-lg border border-red-300 px-4 py-2 text-sm font-semibold text-red-700 transition hover:bg-red-50');
-    cancel.type = 'button';
-    cancel.dataset.cancelAppointment = '';
-    cancel.dataset.recordId = String(appointmentId);
-    card.append(cancel);
 
     return card;
 }
@@ -462,39 +470,6 @@ function initAppointments(root) {
     }
 
     root.querySelector('[data-reload-appointments]').addEventListener('click', loadAppointments);
-
-    root.addEventListener('submit', async (event) => {
-        const form = event.target.closest('[data-patch-appointment]');
-
-        if (!form) {
-            return;
-        }
-
-        event.preventDefault();
-        clearMessage(form.closest('article').querySelector('[data-item-error]'));
-
-        const changedFields = [...form.elements]
-            .filter((element) => element.name && element.value !== element.dataset.originalValue)
-            .map((element) => [element.name, element.value]);
-
-        if (changedFields.length === 0) {
-            showMessage(form.closest('article').querySelector('[data-item-error]'), 'No hay cambios para enviar.');
-
-            return;
-        }
-
-        try {
-            const patch = Object.fromEntries(changedFields);
-            const response = await requestJson(`${root.dataset.endpointUrl}/${encodeURIComponent(form.dataset.recordId)}`, {
-                method: 'PATCH',
-                body: patch,
-            });
-            showMessage(message, response.message ?? 'La asesoría fue actualizada.', 'success');
-            await loadAppointments();
-        } catch (requestError) {
-            showMessage(form.closest('article').querySelector('[data-item-error]'), requestError.message);
-        }
-    });
 
     root.addEventListener('appointments:reload', loadAppointments);
 
