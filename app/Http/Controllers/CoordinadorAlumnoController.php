@@ -4,7 +4,6 @@ namespace App\Http\Controllers;
 
 use App\Models\Alumno;
 use App\Models\Usuario;
-use Carbon\Traits\ToStringFormat;
 use Illuminate\Contracts\View\View;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\JsonResponse;
@@ -53,12 +52,12 @@ class CoordinadorAlumnoController extends Controller
     public function store(Request $request): JsonResponse|RedirectResponse
     {
         $validated = $request->validate([
-            'correo' => ['required', 'email', 'unique:usuario,correo'],
+            'correo' => ['required', 'email:rfc,filter', 'unique:usuario,correo'],
             'nombre' => ['required', 'string'],
             'apellidos' => ['required', 'string'],
             'telefono' => ['required', 'string', 'regex:/^[0-9]{10}$/', 'unique:alumno,telefono'],
         ], [
-            'correo.email' => 'El correo debe tener un formato válido.',
+            'correo.email' => 'El correo debe tener un formato válido e incluir una terminación como .com o .mx.',
             'telefono.regex' => 'El teléfono debe contener exactamente 10 dígitos.',
         ]);
         $contrasenaTemporal = Str::random(16);
@@ -107,9 +106,9 @@ class CoordinadorAlumnoController extends Controller
             'nombre' => ['sometimes', 'required', 'string'],
             'apellidos' => ['sometimes', 'required', 'string'],
             'telefono' => ['sometimes', 'required', 'string', 'regex:/^[0-9]{10}$/', Rule::unique('alumno', 'telefono')->ignore($alumno->id_alumno, 'id_alumno')],
-            'correo' => ['sometimes', 'required', 'email', Rule::unique('usuario', 'correo')->ignore($alumno->id_usuario, 'id_usuario')],
+            'correo' => ['sometimes', 'required', 'email:rfc,filter', Rule::unique('usuario', 'correo')->ignore($alumno->id_usuario, 'id_usuario')],
         ], [
-            'correo.email' => 'El correo debe tener un formato válido.',
+            'correo.email' => 'El correo debe tener un formato válido e incluir una terminación como .com o .mx.',
             'telefono.regex' => 'El teléfono debe contener exactamente 10 dígitos.',
         ]);
 

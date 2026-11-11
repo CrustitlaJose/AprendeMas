@@ -96,6 +96,37 @@ class CoordinadorProfesorControllerTest extends TestCase
         $this->assertDatabaseMissing('usuario', ['correo' => 'profesor@example.com']);
     }
 
+    public function test_coordinator_cannot_register_a_professor_with_email_without_domain_termination(): void
+    {
+        $coordinador = Usuario::create([
+            'correo' => 'coordinador@example.com',
+            'contrasena_hash' => Hash::make('password'),
+            'rol' => 'Coordinador',
+            'estado' => 'Activo',
+        ]);
+        $materia = Materia::create([
+            'nombre_materia' => 'Matemáticas',
+            'descripcion' => 'Matemáticas',
+            'clave' => 'MAT-01',
+            'area' => 'Ciencias',
+        ]);
+
+        $response = $this->actingAs($coordinador)
+            ->postJson(route('coordinador.profesores.store'), [
+                'correo' => 'profesor@dominio',
+                'nombre' => 'Luis',
+                'apellidos' => 'García',
+                'departamento' => 'Sistemas',
+                'especialidad' => 'Programación',
+                'materias' => [$materia->id_materia],
+            ]);
+
+        $response->assertUnprocessable()
+            ->assertJsonValidationErrors('correo');
+        $this->assertDatabaseMissing('usuario', ['correo' => 'profesor@dominio']);
+        $this->assertDatabaseCount('profesor', 0);
+    }
+
     public function test_coordinator_must_select_at_least_one_subject_when_registering_a_professor(): void
     {
         $coordinador = Usuario::create([

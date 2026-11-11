@@ -43,8 +43,9 @@ class PasswordResetLinkTest extends TestCase
 
     public function test_endpoint_rejects_an_invalid_email(): void
     {
-        $this->postJson(route('password.email'), ['correo' => 'no-es-correo'])
-            ->assertStatus(422);
+        $this->postJson(route('password.email'), ['correo' => 'no@dominio'])
+            ->assertStatus(422)
+            ->assertJsonValidationErrors('correo');
     }
 
     public function test_password_reset_notification_uses_the_users_correo_address(): void

@@ -321,15 +321,20 @@ class CoordinadorAlumnoControllerTest extends TestCase
             'estado' => 'Activo',
         ]);
 
-        $this->actingAs($coordinador)
-            ->postJson('/coordinador/alumnos', [
-                'correo' => 'esto-no-es-un-correo',
-                'nombre' => 'Ana',
-                'apellidos' => 'Pérez',
-                'telefono' => '5551234567',
-            ])
-            ->assertStatus(422)
-            ->assertJsonValidationErrors('correo');
+        foreach (['esto-no-es-un-correo', 'ana@dominio'] as $correo) {
+            $this->actingAs($coordinador)
+                ->postJson('/coordinador/alumnos', [
+                    'correo' => $correo,
+                    'nombre' => 'Ana',
+                    'apellidos' => 'Pérez',
+                    'telefono' => '5551234567',
+                ])
+                ->assertStatus(422)
+                ->assertJsonValidationErrors('correo')
+                ->assertJsonPath('errors.correo.0', 'El correo debe tener un formato válido e incluir una terminación como .com o .mx.');
+
+            $this->assertDatabaseMissing('usuario', ['correo' => $correo]);
+        }
     }
 
     public function test_student_update_rejects_invalid_phone_and_email_values(): void
@@ -357,7 +362,7 @@ class CoordinadorAlumnoControllerTest extends TestCase
 
         $this->actingAs($coordinador)
             ->patchJson(route('coordinador.alumnos.update', $alumno->id_alumno), [
-                'correo' => 'no-es-un-correo',
+                'correo' => 'ana@dominio',
                 'telefono' => '123456789',
             ])
             ->assertStatus(422)
