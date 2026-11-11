@@ -136,10 +136,7 @@ class CoordinadorAlumnoController extends Controller
     public function destroy(Request $request, int $id): JsonResponse|RedirectResponse
     {
         $alumno = Alumno::findOrFail($id);
-
         $alumno->usuario()->update(['estado' => 'Inactivo']);
-        $alumno->estado = 'Inactivo';
-        $alumno->save();
 
         if ($request->expectsJson()) {
             return response()->json(['message' => 'Baja lógica aplicada correctamente.']);
@@ -151,12 +148,7 @@ class CoordinadorAlumnoController extends Controller
     public function active(Request $request, int $id): JsonResponse|RedirectResponse
     {
         $alumno = Alumno::findOrFail($id);
-
-        DB::transaction(function () use ($alumno): void {
-            $alumno->usuario()->update(['estado' => 'Activo']);
-            $alumno->estado = 'Activo';
-            $alumno->save();
-        });
+        $alumno->usuario()->update(['estado' => 'Activo']);
 
         if ($request->expectsJson()) {
             return response()->json(['message' => 'Alta lógica aplicada correctamente.']);
