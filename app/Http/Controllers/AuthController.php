@@ -87,7 +87,7 @@ class AuthController extends Controller
     public function sendPasswordResetLink(Request $request): JsonResponse
     {
         $validated = $request->validate([
-            'correo' => ['required', 'email', 'max:255'],
+            'correo' => ['required', 'email:rfc,filter', 'max:255'],
         ]);
 
         Password::sendResetLink(['correo' => $validated['correo']]);

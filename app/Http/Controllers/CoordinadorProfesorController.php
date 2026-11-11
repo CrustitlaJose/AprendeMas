@@ -47,7 +47,7 @@ class CoordinadorProfesorController extends Controller
     public function store(Request $request): JsonResponse|RedirectResponse
     {
         $validated = $request->validate([
-            'correo' => ['required', 'email', 'unique:usuario,correo'],
+            'correo' => ['required', 'email:rfc,filter', 'unique:usuario,correo'],
             'nombre' => ['required', 'string'],
             'apellidos' => ['required', 'string'],
             'departamento' => ['required', 'string'],
@@ -110,7 +110,7 @@ class CoordinadorProfesorController extends Controller
             'apellidos' => ['sometimes', 'required', 'string'],
             'departamento' => ['sometimes', 'required', 'string'],
             'especialidad' => ['sometimes', 'required', 'string'],
-            'correo' => ['sometimes', 'required', 'email', Rule::unique('usuario', 'correo')->ignore($profesor->id_usuario, 'id_usuario')],
+            'correo' => ['sometimes', 'required', 'email:rfc,filter', Rule::unique('usuario', 'correo')->ignore($profesor->id_usuario, 'id_usuario')],
         ]);
 
         DB::transaction(function () use ($validated, $profesor): void {
