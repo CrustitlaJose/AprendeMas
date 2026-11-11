@@ -72,7 +72,7 @@
                             <td class="px-5 py-4">{{ $alumno->usuario?->correo ?? '—' }}</td>
                             <td class="px-5 py-4">{{ $alumno->telefono }}</td>
                             <td class="px-5 py-4">
-                                @if (($alumno->usuario?->estado ?? $alumno->estado) === 'Activo')
+                                @if ($alumno->usuario?->estado === 'Activo')
                                     <span class="rounded-full bg-green-50 px-2.5 py-1 text-xs font-semibold text-[#218838]">Activo</span>
                                 @else
                                     <span class="rounded-full bg-gray-100 px-2.5 py-1 text-xs font-semibold text-gray-700">Inactivo</span>
@@ -81,7 +81,7 @@
                             <td class="px-5 py-4">
                                 <div class="flex justify-end gap-3">
                                     <button type="button" onclick="document.getElementById('modal-{{ $formId }}').showModal()" class="font-semibold text-[#1F4E78] hover:text-[#193f61]">Editar</button>
-                                    @if (($alumno->usuario?->estado ?? $alumno->estado) === 'Activo')
+                                    @if ($alumno->usuario?->estado === 'Activo')
                                         <form action="{{ route('coordinador.alumnos.destroy', $alumno->id_alumno) }}" method="POST" data-confirm-title="¿Dar de baja a este alumno?" data-confirm-message="La cuenta del alumno se desactivará y ya no podrá acceder al sistema." data-confirm-label="Sí, dar de baja">
                                             @csrf
                                             @method('DELETE')

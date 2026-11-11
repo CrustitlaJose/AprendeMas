@@ -85,7 +85,6 @@ class CoordinadorAlumnoControllerTest extends TestCase
             'nombre' => 'Ana',
             'apellidos' => 'Pérez López',
             'telefono' => '5551234567',
-            'estado' => 'Activo',
         ]);
 
         $usuarioCreado = Usuario::where('correo', 'nuevo@example.com')->firstOrFail();
@@ -124,7 +123,6 @@ class CoordinadorAlumnoControllerTest extends TestCase
             'nombre' => 'Ana',
             'apellidos' => 'Pérez López',
             'telefono' => '5551234567',
-            'estado' => 'Activo',
         ]);
         $this->assertDatabaseHas('usuario', [
             'correo' => 'nuevo@example.com',
@@ -160,7 +158,6 @@ class CoordinadorAlumnoControllerTest extends TestCase
             'apellidos' => 'Pérez López',
             'telefono' => '5551234567',
         ]);
-        $alumno->estado = 'Activo';
         $alumno->save();
 
         $this->actingAs($coordinador)
@@ -196,7 +193,7 @@ class CoordinadorAlumnoControllerTest extends TestCase
             'apellidos' => 'Pérez López',
             'telefono' => '5551234567',
         ]);
-        $alumno->estado = 'Inactivo';
+        $alumno->id_alumno = 900000000;
         $alumno->save();
 
         $this->actingAs($coordinador)
@@ -227,7 +224,7 @@ class CoordinadorAlumnoControllerTest extends TestCase
             'apellidos' => 'Pérez López',
             'telefono' => '5551234567',
         ]);
-        $alumno->estado = 'Inactivo';
+        $alumno->id_alumno = 900000000;
         $alumno->save();
 
         $this->actingAs($coordinador)
@@ -239,10 +236,57 @@ class CoordinadorAlumnoControllerTest extends TestCase
             'id_usuario' => $usuarioAlumno->id_usuario,
             'estado' => 'Activo',
         ]);
-        $this->assertDatabaseHas('alumno', [
-            'id_alumno' => $alumno->id_alumno,
+        $this->assertDatabaseHas('usuario', [
+            'id_usuario' => $coordinador->id_usuario,
             'estado' => 'Activo',
         ]);
+
+        $this->actingAs($usuarioAlumno->fresh())
+            ->getJson(route('alumno.asesorias.index'))
+            ->assertOk();
+    }
+
+    public function test_coordinator_can_deactivate_the_selected_student_without_changing_other_users(): void
+    {
+        $coordinador = Usuario::create([
+            'correo' => 'coordinador@example.com',
+            'contrasena_hash' => Hash::make('password'),
+            'rol' => 'Coordinador',
+            'estado' => 'Activo',
+        ]);
+        $usuarioAlumno = Usuario::create([
+            'correo' => 'ana@example.com',
+            'contrasena_hash' => Hash::make('password'),
+            'rol' => 'Alumno',
+            'estado' => 'Activo',
+        ]);
+        $alumno = new Alumno([
+            'id_usuario' => $usuarioAlumno->id_usuario,
+            'matricula' => 'A00123456',
+            'nombre' => 'Ana',
+            'apellidos' => 'Pérez López',
+            'telefono' => '5551234567',
+        ]);
+        $alumno->id_alumno = 900000000;
+        $alumno->save();
+
+        $this->actingAs($coordinador)
+            ->deleteJson(route('coordinador.alumnos.destroy', $alumno->id_alumno))
+            ->assertOk()
+            ->assertJsonPath('message', 'Baja lógica aplicada correctamente.');
+
+        $this->assertDatabaseHas('usuario', [
+            'id_usuario' => $usuarioAlumno->id_usuario,
+            'estado' => 'Inactivo',
+        ]);
+        $this->assertDatabaseHas('usuario', [
+            'id_usuario' => $coordinador->id_usuario,
+            'estado' => 'Activo',
+        ]);
+
+        $this->actingAs($usuarioAlumno->fresh())
+            ->getJson(route('alumno.asesorias.index'))
+            ->assertForbidden();
     }
 
     public function test_student_registration_rejects_phone_numbers_without_exactly_ten_digits(): void
@@ -309,7 +353,6 @@ class CoordinadorAlumnoControllerTest extends TestCase
             'apellidos' => 'Pérez López',
             'telefono' => '5551234567',
         ]);
-        $alumno->estado = 'Activo';
         $alumno->save();
 
         $this->actingAs($coordinador)
