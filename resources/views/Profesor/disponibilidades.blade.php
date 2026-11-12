@@ -91,7 +91,8 @@
                     <span @class([
                         'rounded-full px-3 py-1 text-xs font-semibold',
                         'bg-green-50 text-green-800' => $disponibilidad->estado === 'Disponible',
-                        'bg-amber-50 text-amber-800' => $disponibilidad->estado !== 'Disponible',
+                        'bg-amber-50 text-amber-800' => $disponibilidad->estado === 'Ocupado',
+                        'bg-gray-100 text-gray-700' => $disponibilidad->estado === 'Eliminado',
                     ])>{{ $disponibilidad->estado }}</span>
                 </summary>
 
@@ -129,7 +130,13 @@
                         <button type="submit" class="text-sm font-semibold text-red-700 hover:text-red-800">Eliminar disponibilidad</button>
                     </form>
                 @else
-                    <p class="border-t border-gray-100 px-5 py-4 text-sm text-gray-600">Este horario ya está ocupado o asociado a una asesoría y no se puede modificar ni eliminar.</p>
+                    <p class="border-t border-gray-100 px-5 py-4 text-sm text-gray-600">
+                        @if ($disponibilidad->estado === 'Eliminado')
+                            Esta disponibilidad fue eliminada y se conserva como registro histórico.
+                        @else
+                            Este horario ya está ocupado o asociado a una asesoría y no se puede modificar ni eliminar.
+                        @endif
+                    </p>
                 @endif
             </details>
         @empty

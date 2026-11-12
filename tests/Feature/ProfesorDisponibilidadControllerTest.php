@@ -63,9 +63,21 @@ class ProfesorDisponibilidadControllerTest extends TestCase
         $this->deleteJson(route('profesor.api.disponibilidades.destroy', $idDisponibilidad))
             ->assertNoContent();
 
-        $this->assertDatabaseMissing('disponibilidad', [
+        $this->assertDatabaseHas('disponibilidad', [
             'id_disponibilidad' => $idDisponibilidad,
+            'estado' => 'Eliminado',
         ]);
+        $this->patchJson(route('profesor.api.disponibilidades.update', $idDisponibilidad), [
+            'modalidad' => 'Presencial',
+        ])->assertStatus(409);
+
+        $this->postJson(route('profesor.api.disponibilidades.store'), [
+            'fecha' => $fecha,
+            'hora_inicio' => '09:00',
+            'hora_fin' => '10:00',
+            'modalidad' => 'Presencial',
+        ])->assertCreated();
+
         $this->assertDatabaseHas('notificacion', [
             'id_asesoria' => null,
             'id_usuario' => $profesor->id_usuario,
@@ -159,12 +171,13 @@ class ProfesorDisponibilidadControllerTest extends TestCase
         $this->deleteJson(route('profesor.api.disponibilidades.destroy', $disponibilidad->id_disponibilidad))
             ->assertNoContent();
 
-        $this->assertDatabaseMissing('disponibilidad', [
+        $this->assertDatabaseHas('disponibilidad', [
             'id_disponibilidad' => $disponibilidad->id_disponibilidad,
+            'estado' => 'Eliminado',
         ]);
         $this->assertDatabaseHas('asesoria', [
             'id_asesoria' => $asesoria->id_asesoria,
-            'id_disponibilidad' => null,
+            'id_disponibilidad' => $disponibilidad->id_disponibilidad,
             'estado' => 'Cancelada',
         ]);
         $this->assertDatabaseHas('notificacion', [

@@ -216,7 +216,7 @@ class DisponibilidadManagementTest extends TestCase
         ]);
     }
 
-    public function test_professor_can_update_and_delete_their_available_slot(): void
+    public function test_professor_can_update_and_logically_delete_their_available_slot(): void
     {
         $profesor = $this->crearProfesor('profesor@example.com');
         $idProfesor = $profesor->profesor()->firstOrFail()->id_profesor;
@@ -250,8 +250,10 @@ class DisponibilidadManagementTest extends TestCase
             ->assertRedirect(route('profesor.disponibilidades.index'))
             ->assertSessionHas('status', 'La disponibilidad se eliminó correctamente.');
 
-        $this->assertDatabaseMissing('disponibilidad', [
+        $this->assertModelExists($disponibilidad);
+        $this->assertDatabaseHas('disponibilidad', [
             'id_disponibilidad' => $disponibilidad->id_disponibilidad,
+            'estado' => 'Eliminado',
         ]);
         $this->assertDatabaseHas('notificacion', [
             'id_asesoria' => null,
@@ -313,8 +315,12 @@ class DisponibilidadManagementTest extends TestCase
 
         $this->assertDatabaseHas('asesoria', [
             'id_asesoria' => $asesoria->id_asesoria,
-            'id_disponibilidad' => null,
+            'id_disponibilidad' => $disponibilidad->id_disponibilidad,
             'estado' => 'Cancelada',
+        ]);
+        $this->assertDatabaseHas('disponibilidad', [
+            'id_disponibilidad' => $disponibilidad->id_disponibilidad,
+            'estado' => 'Eliminado',
         ]);
         $this->assertDatabaseHas('notificacion', [
             'id_asesoria' => $asesoria->id_asesoria,
@@ -327,6 +333,39 @@ class DisponibilidadManagementTest extends TestCase
             'tipo' => 'Eliminación de disponibilidad',
         ]);
         $this->assertDatabaseCount('notificacion', 2);
+    }
+
+    public function test_professor_can_reuse_a_time_slot_after_logically_deleting_its_availability(): void
+    {
+        $profesor = $this->crearProfesor('profesor@example.com');
+        $idProfesor = $profesor->profesor()->firstOrFail()->id_profesor;
+        Disponibilidad::create([
+            'id_profesor' => $idProfesor,
+            'fecha' => '2030-01-02',
+            'hora_inicio' => '09:00',
+            'hora_fin' => '10:00',
+            'modalidad' => 'Presencial',
+            'estado' => 'Eliminado',
+        ]);
+
+        $this->actingAs($profesor)
+            ->post(route('profesor.disponibilidades.store'), [
+                'fecha' => '2030-01-02',
+                'hora_inicio' => '09:00',
+                'hora_fin' => '10:00',
+                'modalidad' => 'Presencial',
+                'repeticion' => 'unica',
+            ])
+            ->assertRedirect(route('profesor.disponibilidades.index'))
+            ->assertSessionHas('status', 'La disponibilidad se registró correctamente.');
+
+        $this->assertDatabaseHas('disponibilidad', [
+            'id_profesor' => $idProfesor,
+            'fecha' => '2030-01-02',
+            'hora_inicio' => '09:00:00',
+            'estado' => 'Disponible',
+        ]);
+        $this->assertDatabaseCount('disponibilidad', 2);
     }
 
     public function test_professor_cannot_update_another_professors_availability(): void

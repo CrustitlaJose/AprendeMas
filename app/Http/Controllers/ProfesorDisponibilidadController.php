@@ -71,6 +71,7 @@ class ProfesorDisponibilidadController extends Controller
                 ->lockForUpdate()
                 ->firstOrFail();
 
+            $this->assertNotEliminated($disponibilidad);
             $this->assertNotBooked($disponibilidad);
 
             $horario = $this->validatedSchedule($request, $disponibilidad);
@@ -109,6 +110,8 @@ class ProfesorDisponibilidadController extends Controller
                 abort(409, 'No puedes eliminar una disponibilidad ocupada sin una asesoría confirmada.');
             }
 
+            $disponibilidad->update(['estado' => 'Eliminado']);
+
             foreach ($asesorias as $asesoria) {
                 $asesoria->update(['estado' => 'Cancelada']);
                 DisponibilidadEliminada::dispatch($disponibilidad, $asesoria);
@@ -117,8 +120,6 @@ class ProfesorDisponibilidadController extends Controller
             if ($asesorias->isEmpty()) {
                 DisponibilidadEliminada::dispatch($disponibilidad);
             }
-
-            $disponibilidad->delete();
         });
 
         return response()->json(null, 204);
@@ -186,6 +187,7 @@ class ProfesorDisponibilidadController extends Controller
     {
         $overlapExists = $profesor->disponibilidad()
             ->where('fecha', $horario['fecha'])
+            ->where('estado', '<>', 'Eliminado')
             ->where('hora_inicio', '<', $horario['hora_fin'])
             ->where('hora_fin', '>', $horario['hora_inicio'])
             ->when(
@@ -207,6 +209,15 @@ class ProfesorDisponibilidadController extends Controller
             $disponibilidad->asesorias()->where('estado', 'Confirmada')->exists(),
             409,
             'No puedes modificar ni eliminar una disponibilidad con una asesoría asociada.'
+        );
+    }
+
+    private function assertNotEliminated(Disponibilidad $disponibilidad): void
+    {
+        abort_if(
+            $disponibilidad->estado === 'Eliminado',
+            409,
+            'No puedes modificar una disponibilidad eliminada.'
         );
     }
 }

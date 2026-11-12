@@ -102,6 +102,8 @@ class DisponibilidadController extends Controller
                 ]);
             }
 
+            $disponibilidad->update(['estado' => 'Eliminado']);
+
             foreach ($asesorias as $asesoria) {
                 $asesoria->update(['estado' => 'Cancelada']);
                 DisponibilidadEliminada::dispatch($disponibilidad, $asesoria);
@@ -110,8 +112,6 @@ class DisponibilidadController extends Controller
             if ($asesorias->isEmpty()) {
                 DisponibilidadEliminada::dispatch($disponibilidad);
             }
-
-            $disponibilidad->delete();
         });
 
         return redirect()->route('profesor.disponibilidades.index')
@@ -243,6 +243,7 @@ class DisponibilidadController extends Controller
 
         $query = $profesor->disponibilidad()
             ->where('fecha', $validated['fecha'])
+            ->where('estado', '<>', 'Eliminado')
             ->where('hora_inicio', '<', $validated['hora_fin'])
             ->where('hora_fin', '>', $validated['hora_inicio']);
 
