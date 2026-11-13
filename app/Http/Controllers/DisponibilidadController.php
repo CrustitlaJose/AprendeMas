@@ -19,18 +19,6 @@ use Illuminate\Validation\ValidationException;
 
 class DisponibilidadController extends Controller
 {
-    public function teacherIndex(Request $request): View
-    {
-        $profesor = $this->profesorAutenticado($request);
-        $disponibilidades = $profesor->disponibilidad()
-            ->with('asesorias')
-            ->orderBy('fecha')
-            ->orderBy('hora_inicio')
-            ->get();
-
-        return view('Profesor.disponibilidades', compact('disponibilidades'));
-    }
-
     public function store(Request $request): RedirectResponse
     {
         $profesor = $this->profesorAutenticado($request);
@@ -85,6 +73,9 @@ class DisponibilidadController extends Controller
     public function destroy(Request $request, int $disponibilidadId): RedirectResponse
     {
         $profesor = $this->profesorAutenticado($request);
+        $week = $request->validate([
+            'semana' => ['sometimes', 'date_format:Y-m-d'],
+        ])['semana'] ?? null;
 
         DB::transaction(function () use ($profesor, $disponibilidadId): void {
             $disponibilidad = $profesor->disponibilidad()
@@ -114,7 +105,7 @@ class DisponibilidadController extends Controller
             $disponibilidad->delete();
         });
 
-        return redirect()->route('profesor.disponibilidades.index')
+        return redirect()->route('profesor.disponibilidades.index', $week === null ? [] : ['semana' => $week])
             ->with('status', 'La disponibilidad se eliminó correctamente.');
     }
 
@@ -259,7 +250,7 @@ class DisponibilidadController extends Controller
 
     private function validarEditable(Disponibilidad $disponibilidad): void
     {
-        if ($disponibilidad->estado !== 'Disponible' || $disponibilidad->asesorias()->exists()) {
+        if ($disponibilidad->estado !== 'Disponible' || $disponibilidad->asesorias()->where('estado', 'Confirmada')->exists()) {
             throw ValidationException::withMessages([
                 'disponibilidad' => 'No se puede modificar ni eliminar un horario ocupado o asociado a una asesoría.',
             ]);

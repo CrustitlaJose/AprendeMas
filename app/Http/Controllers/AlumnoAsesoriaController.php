@@ -52,7 +52,7 @@ class AlumnoAsesoriaController extends Controller
                 'id_disponibilidad' => $disponibilidad->id_disponibilidad,
                 'id_materia' => $booking['id_materia'],
                 'id_aula' => $aula->id_aula,
-                'fecha_registro' => now(),
+                'fecha_registro' => now('America/Mexico_City'),
                 'estado' => 'Confirmada',
             ]);
 

@@ -38,11 +38,100 @@ class DisponibilidadManagementTest extends TestCase
         ]);
 
         $this->actingAs($profesor)
-            ->get(route('profesor.disponibilidades.index'))
+            ->get(route('profesor.disponibilidades.index', ['semana' => '2030-01-02']))
             ->assertOk()
             ->assertViewIs('Profesor.disponibilidades')
             ->assertSee('2030-01-02')
             ->assertDontSee('2030-01-03');
+    }
+
+    public function test_professor_can_view_weekly_calendar_with_related_appointment_details(): void
+    {
+        $profesorUsuario = $this->crearProfesor('profesor@example.com');
+        $profesor = $profesorUsuario->profesor()->firstOrFail();
+        $alumnoUsuario = Usuario::create([
+            'correo' => 'alumna@example.com',
+            'contrasena_hash' => bcrypt('password'),
+            'rol' => 'Alumno',
+            'estado' => 'Activo',
+        ]);
+        $alumno = Alumno::create([
+            'id_usuario' => $alumnoUsuario->id_usuario,
+            'matricula' => 'A001234',
+            'nombre' => 'Laura',
+            'apellidos' => 'García Pérez',
+            'telefono' => '5550000001',
+        ]);
+        $aula = Aula::create([
+            'nombre_cubiculo' => 'C-01',
+            'capacidad' => '4',
+            'tipo' => 'Presencial',
+        ]);
+        $materia = Materia::create([
+            'nombre_materia' => 'Matemáticas',
+            'descripcion' => 'Asesoría de álgebra',
+            'clave' => 'MAT-01',
+            'area' => 'Ciencias',
+        ]);
+        $disponibilidad = Disponibilidad::create([
+            'id_profesor' => $profesor->id_profesor,
+            'fecha' => '2030-01-02',
+            'hora_inicio' => '09:00',
+            'hora_fin' => '10:00',
+            'modalidad' => 'Presencial',
+            'estado' => 'Ocupado',
+        ]);
+        Asesoria::create([
+            'id_alumno' => $alumno->id_alumno,
+            'id_disponibilidad' => $disponibilidad->id_disponibilidad,
+            'id_materia' => $materia->id_materia,
+            'id_aula' => $aula->id_aula,
+            'fecha_registro' => '2030-01-01 10:00:00',
+            'estado' => 'Confirmada',
+        ]);
+        $disponibilidadLibre = Disponibilidad::create([
+            'id_profesor' => $profesor->id_profesor,
+            'fecha' => '2030-01-02',
+            'hora_inicio' => '10:00',
+            'hora_fin' => '11:00',
+            'modalidad' => 'Presencial',
+            'estado' => 'Disponible',
+        ]);
+        Asesoria::create([
+            'id_alumno' => $alumno->id_alumno,
+            'id_disponibilidad' => $disponibilidadLibre->id_disponibilidad,
+            'id_materia' => $materia->id_materia,
+            'id_aula' => $aula->id_aula,
+            'fecha_registro' => '2030-01-01 11:00:00',
+            'estado' => 'Cancelada',
+        ]);
+
+        $response = $this->actingAs($profesorUsuario)
+            ->get(route('profesor.disponibilidades.index', ['semana' => '2030-01-02']));
+
+        $response->assertOk()
+            ->assertViewIs('Profesor.disponibilidades')
+            ->assertSee('Horario semanal')
+            ->assertSee('Semana anterior')
+            ->assertSee('Semana siguiente')
+            ->assertSee('Selecciona un bloque en el horario semanal para consultar su información')
+            ->assertSee('Eliminar bloque libre')
+            ->assertSee('¿Eliminar este bloque libre?');
+        $this->assertSame('2029-12-31', $response->viewData('weekStart')->toDateString());
+        $this->assertSame('2030-01-05', $response->viewData('weekEnd')->toDateString());
+
+        $calendarBlocks = $response->viewData('calendarBlocks');
+        $this->assertCount(2, $calendarBlocks);
+        $this->assertSame(true, $calendarBlocks[0]['ocupada']);
+        $this->assertSame('Laura García Pérez', $calendarBlocks[0]['asesoria']['alumno']['nombre_completo']);
+        $this->assertSame('alumna@example.com', $calendarBlocks[0]['asesoria']['alumno']['correo']);
+        $this->assertSame('A001234', $calendarBlocks[0]['asesoria']['alumno']['matricula']);
+        $this->assertSame('MAT-01', $calendarBlocks[0]['asesoria']['materia']['clave']);
+        $this->assertSame('C-01', $calendarBlocks[0]['asesoria']['aula']['nombre']);
+        $this->assertSame('01/01/2030 10:00 AM', $calendarBlocks[0]['asesoria']['fecha_registro']);
+        $this->assertSame(false, $calendarBlocks[1]['ocupada']);
+        $this->assertSame('Disponible', $calendarBlocks[1]['estado']);
+        $this->assertNull($calendarBlocks[1]['asesoria']);
     }
 
     public function test_availability_form_offers_only_virtual_and_in_person_modalities(): void
@@ -257,6 +346,76 @@ class DisponibilidadManagementTest extends TestCase
             'id_asesoria' => null,
             'id_usuario' => $profesor->id_usuario,
             'tipo' => 'Eliminación de disponibilidad',
+        ]);
+    }
+
+    public function test_professor_can_edit_available_slot_with_only_canceled_appointments(): void
+    {
+        $profesorUsuario = $this->crearProfesor('profesor@example.com');
+        $profesor = $profesorUsuario->profesor()->firstOrFail();
+        $alumnoUsuario = Usuario::create([
+            'correo' => 'alumno@example.com',
+            'contrasena_hash' => bcrypt('password'),
+            'rol' => 'Alumno',
+            'estado' => 'Activo',
+        ]);
+        $alumno = Alumno::create([
+            'id_usuario' => $alumnoUsuario->id_usuario,
+            'matricula' => 'A001',
+            'nombre' => 'Luis',
+            'apellidos' => 'Pérez',
+            'telefono' => '5550000001',
+            'estado' => 'Activo',
+        ]);
+        $aula = Aula::create([
+            'nombre_cubiculo' => 'C-01',
+            'capacidad' => '4',
+            'tipo' => 'Presencial',
+        ]);
+        $materia = Materia::create([
+            'nombre_materia' => 'Matemáticas',
+            'descripcion' => 'Matemáticas',
+            'clave' => 'MAT-01',
+            'area' => 'Ciencias',
+        ]);
+        $disponibilidad = Disponibilidad::create([
+            'id_profesor' => $profesor->id_profesor,
+            'fecha' => '2030-01-02',
+            'hora_inicio' => '09:00',
+            'hora_fin' => '10:00',
+            'modalidad' => 'Presencial',
+            'estado' => 'Disponible',
+        ]);
+        Asesoria::create([
+            'id_alumno' => $alumno->id_alumno,
+            'id_disponibilidad' => $disponibilidad->id_disponibilidad,
+            'id_materia' => $materia->id_materia,
+            'id_aula' => $aula->id_aula,
+            'fecha_registro' => now(),
+            'estado' => 'Cancelada',
+        ]);
+
+        $this->actingAs($profesorUsuario)
+            ->get(route('profesor.disponibilidades.index', ['semana' => '2030-01-02']))
+            ->assertOk()
+            ->assertSee('Guardar cambios')
+            ->assertSee('Eliminar disponibilidad')
+            ->assertDontSee('Este horario ya está ocupado o asociado a una asesoría y no se puede modificar ni eliminar.');
+
+        $this->put(route('profesor.disponibilidades.update', $disponibilidad->id_disponibilidad), [
+            'fecha' => '2030-01-03',
+            'hora_inicio' => '11:00',
+            'hora_fin' => '12:00',
+            'modalidad' => 'Virtual',
+        ])
+            ->assertRedirect(route('profesor.disponibilidades.index'))
+            ->assertSessionHas('status', 'La disponibilidad se actualizó correctamente.');
+
+        $this->assertDatabaseHas('disponibilidad', [
+            'id_disponibilidad' => $disponibilidad->id_disponibilidad,
+            'fecha' => '2030-01-03',
+            'hora_inicio' => '11:00:00',
+            'estado' => 'Disponible',
         ]);
     }
 

@@ -73,6 +73,7 @@ class AlumnoAsesoriaControllerTest extends TestCase
 
     public function test_student_can_book_an_available_slot_and_cannot_book_it_twice(): void
     {
+        $this->travelTo(Carbon::parse('2026-01-01 08:15:00', 'America/Mexico_City'));
         ['usuario' => $usuario, 'alumno' => $alumno] = $this->createStudent('alumno@example.com');
         ['alumno' => $otroAlumno] = $this->createStudent('otro@example.com');
         ['profesor' => $profesor, 'materia' => $materia] = $this->createProfessor('profesor@example.com');
@@ -112,6 +113,7 @@ class AlumnoAsesoriaControllerTest extends TestCase
             'id_disponibilidad' => $disponibilidad->id_disponibilidad,
             'id_materia' => $materia->id_materia,
             'id_aula' => $aulaDisponible->id_aula,
+            'fecha_registro' => '2026-01-01 08:15:00',
             'estado' => 'Confirmada',
         ]);
         $this->assertDatabaseHas('disponibilidad', [
