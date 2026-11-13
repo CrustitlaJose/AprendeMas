@@ -351,6 +351,7 @@ function initOfferPanel(root) {
             showMessage(message, response.message ?? 'La reserva fue registrada.', 'success');
             bookingPanel.hidden = true;
             bookingForm.reset();
+            await loadOffer();
             document.querySelector('[data-appointments-panel]')?.dispatchEvent(new Event('appointments:reload'));
             refreshNotificationDropdown();
         } catch (requestError) {
