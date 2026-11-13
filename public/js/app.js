@@ -538,7 +538,7 @@ function initAppointments(root) {
 
         try {
             const appointments = responseData(await requestJson(root.dataset.endpointUrl));
-            state.textContent = appointments.length === 0 ? 'No tienes asesorías registradas.' : '';
+            state.textContent = appointments.length === 0 ? 'No tienes asesorías activas.' : '';
             state.classList.toggle('hidden', appointments.length > 0);
             appointments.forEach((appointment) => list.append(appointmentCard(appointment)));
         } catch (requestError) {

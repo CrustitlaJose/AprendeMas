@@ -23,6 +23,7 @@ class AlumnoAsesoriaController extends Controller
     {
         $asesorias = $this->alumnoFrom($request)
             ->asesoria()
+            ->where('estado', '!=', 'Cancelada')
             ->with(['disponibilidad.profesor', 'materia', 'aula'])
             ->orderByDesc('fecha_registro')
             ->orderByDesc('id_asesoria')
