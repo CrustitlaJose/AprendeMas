@@ -25,3 +25,10 @@ _ide_helper.php
 Homestead.json
 Homestead.yaml
 Thumbs.db
+composer.phar
+CLAUDE.md
+AGENTS.md
+.mcp.json
+boost.json
+.claude/
+Aprende_mas.session.sql
