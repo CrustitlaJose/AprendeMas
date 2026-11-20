@@ -27,8 +27,11 @@ class AlumnoAsesoriaControllerTest extends TestCase
         $aula = $this->createAula();
         $fecha = now()->addDays(2)->toDateString();
         $propia = $this->createDisponibilidad($profesor, $fecha, '09:00:00', '10:00:00');
+        $cancelada = $this->createDisponibilidad($profesor, $fecha, '11:00:00', '12:00:00');
         $ajena = $this->createDisponibilidad($profesor, $fecha, '10:00:00', '11:00:00');
         $asesoriaPropia = $this->createAsesoria($alumno, $propia, $materia, $aula);
+        $asesoriaCancelada = $this->createAsesoria($alumno, $cancelada, $materia, $aula);
+        $asesoriaCancelada->update(['estado' => 'Cancelada']);
         $this->createAsesoria($otroAlumno, $ajena, $materia, $aula);
 
         $response = $this->actingAs($usuario)->getJson(route('alumno.asesorias.index'));
@@ -36,6 +39,7 @@ class AlumnoAsesoriaControllerTest extends TestCase
         $response->assertOk()
             ->assertJsonCount(1, 'data')
             ->assertJsonPath('data.0.id_asesoria', $asesoriaPropia->id_asesoria)
+            ->assertJsonMissing(['id_asesoria' => $asesoriaCancelada->id_asesoria])
             ->assertJsonPath('data.0.materia.id_materia', $materia->id_materia);
     }
 
