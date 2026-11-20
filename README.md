@@ -33,9 +33,17 @@ Datos de acceso que quedan configurados al terminar (solo para uso local):
 
 ## Instalación en Windows
 
-Todo se hace en **PowerShell**. Para abrirlo: presiona la tecla **Windows**, escribe `PowerShell` y presiona `Enter`. La línea debe empezar con `PS C:\...>` (si empieza solo con `C:\...>` estás en CMD: escribe `powershell` y `Enter`).
+**Requisito:** una cuenta de Windows **con permisos de administrador** (Git y PostgreSQL no se pueden instalar sin ellos).
 
-Usa **la misma ventana** para todos los pasos. Si Windows pregunta "¿Quieres permitir que esta aplicación haga cambios?", elige **Sí**.
+Todo se hace en **PowerShell como Administrador**:
+
+1. Presiona la tecla **Windows** y escribe `PowerShell`.
+2. Clic derecho en **Windows PowerShell** → **Ejecutar como administrador** → **Sí**.
+3. El título de la ventana debe decir **`Administrador: Windows PowerShell`** y la línea empezar con `PS C:\...>`.
+
+> Si Windows te pide una contraseña al darle "Sí", tu cuenta no es de administrador: pide a quien administre el equipo que la escriba, o usa una cuenta de administrador.
+
+Usa **esa misma ventana** para todos los pasos.
 
 ### W1 — Permitir que PowerShell ejecute npm
 
@@ -51,24 +59,25 @@ Tarda varios minutos. Si una herramienta ya estaba instalada, winget lo indica y
 
 ```powershell
 winget install --id Git.Git -e --source winget --accept-source-agreements --accept-package-agreements
-winget install --id PHP.PHP.8.4 -e --accept-source-agreements --accept-package-agreements
-winget install --id OpenJS.NodeJS.LTS -e --accept-source-agreements --accept-package-agreements
-winget install --id PostgreSQL.PostgreSQL.16 -e --accept-source-agreements --accept-package-agreements --override "--mode unattended --superpassword postgres --serverport 5432"
+winget install --id PHP.PHP.8.4 -e --source winget --accept-source-agreements --accept-package-agreements
+winget install --id OpenJS.NodeJS.LTS -e --source winget --accept-source-agreements --accept-package-agreements
+winget install --id PostgreSQL.PostgreSQL.16 -e --source winget --accept-source-agreements --accept-package-agreements --override "--mode unattended --superpassword postgres --serverport 5432"
 ```
 
 > Si el instalador de PostgreSQL abre una ventana con preguntas, usa la contraseña `postgres`, el puerto `5432` y deja todo lo demás como viene.
+>
+> Si alguna línea muestra en rojo `Error del instalador con el código de salida`, revisa que la ventana diga `Administrador:` en el título y **vuelve a pegar solo esa línea**.
 
-Ahora actualiza la terminal para que reconozca lo instalado y verifica:
+Ahora verifica que todo quedó instalado:
 
 ```powershell
 $env:Path = [Environment]::GetEnvironmentVariable("Path","Machine") + ";" + [Environment]::GetEnvironmentVariable("Path","User")
-git --version
-php -v
-node -v
-npm -v
+foreach ($cmd in "git","php","node","npm") { if (Get-Command $cmd -ErrorAction SilentlyContinue) { "OK     $cmd" } else { "FALTA  $cmd  -> vuelve a pegar su linea de W2" } }
+if (Test-Path "C:\Program Files\PostgreSQL\16\bin\psql.exe") { "OK     PostgreSQL 16" } else { "FALTA  PostgreSQL 16  -> vuelve a pegar su linea de W2" }
+php -r "echo version_compare(PHP_VERSION, '8.4.1', '>=') ? 'OK     PHP ' . PHP_VERSION : 'FALTA  PHP 8.4 (tienes ' . PHP_VERSION . ')';"
 ```
 
-Debe aparecer la versión de cada uno. **`php -v` debe decir `PHP 8.4.x`.** Si dice 8.3 o menor, ver [Solución de problemas](#solución-de-problemas).
+Deben salir **6 líneas con `OK`**. Si alguna dice `FALTA`, haz lo que indica y repite este bloque. No sigas a W3 hasta tener todo en `OK`.
 
 ### W3 — Activar las extensiones de PHP
 
@@ -90,6 +99,8 @@ php -m | findstr /i "pgsql openssl fileinfo mbstring curl zip"
 ```
 
 Deben aparecer **7 líneas**: `curl`, `fileinfo`, `mbstring`, `openssl`, `pdo_pgsql`, `pgsql`, `zip`.
+
+> En una computadora con varias cuentas de Windows, **cada cuenta** debe hacer W3 (PHP se instala por usuario).
 
 ### W4 — Descargar el proyecto
 
@@ -306,8 +317,11 @@ En Windows, ejecuta los comandos en PowerShell dentro de la carpeta `AprendeMas`
 
 | Mensaje | Qué hacer (copiar y pegar) |
 |---|---|
+| `Error del instalador con el código de salida: ...` (Windows) | PowerShell no está como Administrador, o se canceló la ventana de permisos. Abre PowerShell como Administrador (ver inicio de la guía de Windows) y vuelve a pegar esa línea de W2. |
+| `El instalador solicitará que se ejecute como administrador` y luego falla | Igual que la fila anterior. |
+| `El origen 'msstore' requiere que vea los siguientes contratos` | Falta `--source winget` en el comando: copia de nuevo la línea desde W2. |
 | `winget` no se reconoce (Windows) | Instala o actualiza "Instalador de aplicación" desde Microsoft Store y repite W2. |
-| `php`, `git`, `node` o `npm` no se reconocen | Windows: `$env:Path = [Environment]::GetEnvironmentVariable("Path","Machine") + ";" + [Environment]::GetEnvironmentVariable("Path","User")` · Linux: cierra y abre la terminal. |
+| `php`, `git`, `node` o `npm` no se reconocen | Primero ejecuta el bloque de verificación de W2: si dice `FALTA`, la instalación falló. Si dice `OK` pero en otra terminal no se reconoce: `$env:Path = [Environment]::GetEnvironmentVariable("Path","Machine") + ";" + [Environment]::GetEnvironmentVariable("Path","User")` · Linux: cierra y abre la terminal. |
 | `php -v` muestra 8.3 o menor (Windows) | `winget uninstall --id PHP.PHP.8.3 -e` y luego repite W2 y W3. |
 | `php -v` muestra 8.3 o menor (Linux) | `sudo update-alternatives --set php /usr/bin/php8.4` |
 | `php -m \| findstr ...` no muestra nada (Windows) | Repite el bloque de W3 completo y abre una terminal nueva. |
