@@ -117,7 +117,7 @@ Route::middleware('auth')->group(function () {
         ->prefix('profesor')
         ->name('profesor.')
         ->group(function () {
-            Route::get('/disponibilidades', [DisponibilidadController::class, 'teacherIndex'])
+            Route::get('/disponibilidades', [ProfesorDisponibilidadController::class, 'calendar'])
                 ->name('disponibilidades.index');
             Route::post('/disponibilidades', [DisponibilidadController::class, 'store'])
                 ->name('disponibilidades.store');
