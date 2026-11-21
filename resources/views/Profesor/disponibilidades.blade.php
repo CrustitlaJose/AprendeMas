@@ -96,7 +96,7 @@
                     ])>{{ $disponibilidad->estado }}</span>
                 </summary>
 
-                @if ($disponibilidad->estado === 'Disponible' && $disponibilidad->asesorias->isEmpty())
+                @if ($disponibilidad->estado === 'Disponible' && $disponibilidad->asesorias->where('estado', 'Confirmada')->isEmpty())
                     <form action="{{ route('profesor.disponibilidades.update', $disponibilidad->id_disponibilidad) }}" method="POST" class="grid gap-4 border-t border-gray-100 p-5 sm:grid-cols-2 lg:grid-cols-4">
                         @csrf
                         @method('PUT')

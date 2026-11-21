@@ -260,7 +260,10 @@ class DisponibilidadController extends Controller
 
     private function validarEditable(Disponibilidad $disponibilidad): void
     {
-        if ($disponibilidad->estado !== 'Disponible' || $disponibilidad->asesorias()->exists()) {
+        if (
+            $disponibilidad->estado !== 'Disponible'
+            || $disponibilidad->asesorias()->where('estado', 'Confirmada')->exists()
+        ) {
             throw ValidationException::withMessages([
                 'disponibilidad' => 'No se puede modificar ni eliminar un horario ocupado o asociado a una asesoría.',
             ]);

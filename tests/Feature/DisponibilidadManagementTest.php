@@ -396,6 +396,70 @@ class DisponibilidadManagementTest extends TestCase
         ]);
     }
 
+    public function test_professor_can_edit_available_slot_with_only_a_cancelled_appointment(): void
+    {
+        $profesorUsuario = $this->crearProfesor('profesor@example.com');
+        $profesor = $profesorUsuario->profesor()->firstOrFail();
+        $alumnoUsuario = Usuario::create([
+            'correo' => 'alumno@example.com',
+            'contrasena_hash' => bcrypt('password'),
+            'rol' => 'Alumno',
+            'estado' => 'Activo',
+        ]);
+        $alumno = Alumno::create([
+            'id_usuario' => $alumnoUsuario->id_usuario,
+            'matricula' => 'A001',
+            'nombre' => 'Luis',
+            'apellidos' => 'Pérez',
+            'telefono' => '5550000001',
+            'estado' => 'Activo',
+        ]);
+        $materia = Materia::create([
+            'nombre_materia' => 'Matemáticas',
+            'descripcion' => 'Matemáticas',
+            'clave' => 'MAT-01',
+            'area' => 'Ciencias',
+        ]);
+        $aula = Aula::create([
+            'nombre_cubiculo' => 'C-01',
+            'capacidad' => '4',
+            'tipo' => 'Presencial',
+        ]);
+        $disponibilidad = Disponibilidad::create([
+            'id_profesor' => $profesor->id_profesor,
+            'fecha' => '2030-01-02',
+            'hora_inicio' => '09:00',
+            'hora_fin' => '10:00',
+            'modalidad' => 'Presencial',
+            'estado' => 'Disponible',
+        ]);
+        Asesoria::create([
+            'id_alumno' => $alumno->id_alumno,
+            'id_disponibilidad' => $disponibilidad->id_disponibilidad,
+            'id_materia' => $materia->id_materia,
+            'id_aula' => $aula->id_aula,
+            'fecha_registro' => now(),
+            'estado' => 'Cancelada',
+        ]);
+
+        $this->actingAs($profesorUsuario)
+            ->from(route('profesor.disponibilidades.index'))
+            ->put(route('profesor.disponibilidades.update', $disponibilidad->id_disponibilidad), [
+                'fecha' => '2030-01-02',
+                'hora_inicio' => '11:00',
+                'hora_fin' => '12:00',
+                'modalidad' => 'Virtual',
+            ])
+            ->assertRedirect(route('profesor.disponibilidades.index'))
+            ->assertSessionHas('status', 'La disponibilidad se actualizó correctamente.');
+
+        $this->assertDatabaseHas('disponibilidad', [
+            'id_disponibilidad' => $disponibilidad->id_disponibilidad,
+            'hora_inicio' => '11:00:00',
+            'modalidad' => 'Virtual',
+        ]);
+    }
+
     public function test_professor_cannot_edit_or_delete_occupied_availability(): void
     {
         $profesor = $this->crearProfesor('profesor@example.com');
