@@ -30,6 +30,7 @@ class ProfesorDisponibilidadController extends Controller
         $calendarEnd = $monthEnd->endOfWeek(CarbonImmutable::SUNDAY);
         $profesor = $this->profesorFrom($request);
         $disponibilidades = $profesor->disponibilidad()
+            ->where('estado', '<>', 'Eliminado')
             ->whereBetween('fecha', [$calendarStart->toDateString(), $calendarEnd->toDateString()])
             ->with(['asesorias' => static function (Builder|Relation $query): void {
                 $query->where('estado', 'Confirmada')
