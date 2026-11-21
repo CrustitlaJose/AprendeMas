@@ -94,8 +94,8 @@
         <div class="grid gap-6 lg:grid-cols-[minmax(0,2fr)_minmax(18rem,1fr)]">
             <section class="min-w-0 overflow-hidden rounded-xl border border-gray-200 bg-white shadow-sm" aria-label="Tabla de horario semanal">
                 <div class="overflow-x-auto">
-                    <div class="min-w-[760px]">
-                        <div class="grid grid-cols-7 border-b border-gray-200 bg-gray-50">
+                    <div class="min-w-[900px]">
+                        <div class="grid grid-cols-8 border-b border-gray-200 bg-gray-50">
                             <div class="px-3 py-4 text-xs font-semibold uppercase tracking-wide text-gray-500">Hora</div>
                             @foreach ($weekDays as $day)
                                 <div class="border-l border-gray-200 px-2 py-3 text-center">
@@ -106,7 +106,7 @@
                         </div>
 
                         @foreach ($hours as $hour)
-                            <div class="grid grid-cols-7">
+                            <div class="grid grid-cols-8">
                                 <div class="min-h-20 border-b border-gray-200 bg-gray-50 px-2 py-2 text-xs font-medium text-gray-500">{{ sprintf('%02d:00', $hour) }}</div>
                                 @foreach ($weekDays as $day)
                                     @php($slotBlocks = $blocksBySlot[$day['fecha']][$hour] ?? [])

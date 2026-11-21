@@ -105,6 +105,14 @@ class DisponibilidadManagementTest extends TestCase
             'fecha_registro' => '2030-01-01 11:00:00',
             'estado' => 'Cancelada',
         ]);
+        Disponibilidad::create([
+            'id_profesor' => $profesor->id_profesor,
+            'fecha' => '2030-01-06',
+            'hora_inicio' => '11:00',
+            'hora_fin' => '12:00',
+            'modalidad' => 'Virtual',
+            'estado' => 'Disponible',
+        ]);
 
         $response = $this->actingAs($profesorUsuario)
             ->get(route('profesor.disponibilidades.index', ['semana' => '2030-01-02']));
@@ -114,17 +122,19 @@ class DisponibilidadManagementTest extends TestCase
             ->assertSee('Horario semanal')
             ->assertSee('Semana anterior')
             ->assertSee('Semana siguiente')
+            ->assertSee('Domingo')
             ->assertSee('09:00–10:00')
             ->assertSee('10:00–11:00')
+            ->assertSee('11:00–12:00')
             ->assertDontSee('Disponibilidades registradas')
             ->assertSee('Selecciona un bloque en el horario semanal para consultar su información')
             ->assertSee('Eliminar bloque libre')
             ->assertSee('¿Eliminar este bloque libre?');
         $this->assertSame('2029-12-31', $response->viewData('weekStart')->toDateString());
-        $this->assertSame('2030-01-05', $response->viewData('weekEnd')->toDateString());
+        $this->assertSame('2030-01-06', $response->viewData('weekEnd')->toDateString());
 
         $calendarBlocks = $response->viewData('calendarBlocks');
-        $this->assertCount(2, $calendarBlocks);
+        $this->assertCount(3, $calendarBlocks);
         $this->assertSame(true, $calendarBlocks[0]['ocupada']);
         $this->assertSame('Laura García Pérez', $calendarBlocks[0]['asesoria']['alumno']['nombre_completo']);
         $this->assertSame('alumna@example.com', $calendarBlocks[0]['asesoria']['alumno']['correo']);

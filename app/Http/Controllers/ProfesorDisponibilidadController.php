@@ -25,7 +25,7 @@ class ProfesorDisponibilidadController extends Controller
         ]);
         $weekStart = CarbonImmutable::parse($validated['semana'] ?? today()->toDateString())
             ->startOfWeek(CarbonImmutable::MONDAY);
-        $weekEnd = $weekStart->addDays(5);
+        $weekEnd = $weekStart->addDays(6);
         $profesor = $this->profesorFrom($request);
         $disponibilidades = $profesor->disponibilidad()
             ->whereBetween('fecha', [$weekStart->toDateString(), $weekEnd->toDateString()])
@@ -37,7 +37,7 @@ class ProfesorDisponibilidadController extends Controller
             ->orderBy('hora_inicio')
             ->get();
 
-        $nombresDias = ['Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado'];
+        $nombresDias = ['Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado', 'Domingo'];
         $weekDays = [];
 
         foreach ($nombresDias as $offset => $nombreDia) {
