@@ -13,6 +13,8 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Str;
 use Illuminate\Validation\Rule;
+use Illuminate\Support\Facades\Password;
+use App\Services\EnlaceRestablecimiento;
 
 class CoordinadorAlumnoController extends Controller
 {
@@ -80,6 +82,8 @@ class CoordinadorAlumnoController extends Controller
 
             return $alumno;
         });
+
+        Password::sendResetLink(['correo' => $validated['correo']]);
 
         $alumno->load('usuario');
 

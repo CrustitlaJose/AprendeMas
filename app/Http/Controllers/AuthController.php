@@ -10,6 +10,7 @@ use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Password;
+use Illuminate\Support\Facades\Hash;
 
 class AuthController extends Controller
 {
@@ -84,16 +85,59 @@ class AuthController extends Controller
         return redirect()->route('login');
     }
 
-    public function sendPasswordResetLink(Request $request): JsonResponse
+    public function sendPasswordResetLink(Request $request): RedirectResponse
     {
         $validated = $request->validate([
             'correo' => ['required', 'email:rfc,filter', 'max:255'],
         ]);
 
-        Password::sendResetLink(['correo' => $validated['correo']]);
+        $enlace = null;
 
-        return response()->json([
-            'message' => 'Si el correo está registrado, recibirás un enlace para restablecer tu contraseña.',
-        ], 202);
+        $status = Password::sendResetLink(
+            ['correo' => $validated['correo']],
+            function (Usuario $usuario, string $token) use (&$enlace) {
+                $enlace = route('password.reset', ['token' => $token, 'email' => $usuario->correo]);
+            }
+        );
+
+        if ($status === Password::RESET_THROTTLED) {
+            return back()->withInput()->withErrors([
+                'correo' => 'Ya se generó un enlace hace poco. Espera un minuto e inténtalo de nuevo.',
+            ]);
+        }
+
+        if ($enlace === null) {
+            return back()->withInput()->withErrors([
+                'correo' => 'No existe una cuenta registrada con ese correo.',
+            ]);
+        }
+
+        return back()->with('enlace_reset', $enlace);
+    }
+
+    public function resetPassword(Request $request): RedirectResponse
+    {
+        $data = $request->validate([
+            'token' => ['required'],
+            'correo' => ['required', 'email'],
+            'password' => ['required', 'confirmed', 'min:8'],
+        ]);
+
+        $status = Password::reset(
+            [
+                'correo' => $data['correo'],
+                'password' => $data['password'],
+                'password_confirmation' => $request->input('password_confirmation'),
+                'token' => $data['token'],
+            ],
+            function (Usuario $usuario, string $password) {
+                $usuario->contrasena_hash = Hash::make($password);
+                $usuario->save();
+            }
+        );
+
+        return $status === Password::PASSWORD_RESET
+            ? redirect()->route('login')->with('status', __($status))
+            : back()->withErrors(['correo' => __($status)]);
     }
 }

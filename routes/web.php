@@ -74,6 +74,19 @@ Route::get('/login', function () {
     return view('login');
 })->middleware('guest')->name('login');
 
+Route::get('/reset-password/{token}', function (Request $request, string $token) {
+    return view('reset-password', [
+        'token' => $token,
+        'correo' => $request->query('email'),
+    ]);
+})->middleware('guest')->name('password.reset');
+
+Route::post('/reset-password', [AuthController::class, 'resetPassword'])
+    ->middleware('guest')->name('password.update');
+
+Route::get('/forgot-password', fn () => view('forgot-password'))
+    ->middleware('guest')->name('password.request');
+
 /*
 |--------------------------------------------------------------------------
 | Procesamiento de Autenticación

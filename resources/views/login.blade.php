@@ -17,6 +17,11 @@
         <form action="{{ route('login.post') }}" method="POST">
             @csrf
             
+            @if (session('status'))
+                <div class="mb-5 rounded-lg bg-green-50 border border-green-200 p-3 text-sm text-green-800">
+                    {{ session('status') }}
+                </div>
+            @endif
             <div class="mb-5">
                 <label class="block text-gray-700 font-semibold mb-2">Número de Control / Usuario</label>
                 <input type="text" name="identificador" class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-900 focus:border-transparent transition" placeholder="Ej. 23090935">
@@ -30,6 +35,9 @@
             <button type="submit" class="w-full bg-blue-900 hover:bg-blue-800 text-white font-bold py-3 px-4 rounded-lg transition duration-200 shadow-md">
                 Ingresar al Sistema
             </button>
+            <p class="mt-4 text-center text-sm">
+                <a href="{{ route('password.request') }}" class="text-blue-900 hover:underline">¿Olvidaste tu contraseña?</a>
+            </p>
         </form>
     </div>
 
