@@ -28,11 +28,6 @@ class ProfesorDisponibilidadController extends Controller
         $weekEnd = $weekStart->addDays(5);
         $profesor = $this->profesorFrom($request);
         $disponibilidades = $profesor->disponibilidad()
-            ->with('asesorias')
-            ->orderBy('fecha')
-            ->orderBy('hora_inicio')
-            ->get();
-        $disponibilidadesSemanales = $profesor->disponibilidad()
             ->whereBetween('fecha', [$weekStart->toDateString(), $weekEnd->toDateString()])
             ->with(['asesorias' => static function (Builder|Relation $query): void {
                 $query->where('estado', 'Confirmada')
@@ -54,7 +49,7 @@ class ProfesorDisponibilidadController extends Controller
             ];
         }
 
-        $calendarBlocks = $disponibilidadesSemanales->map(static function (Disponibilidad $disponibilidad): array {
+        $calendarBlocks = $disponibilidades->map(static function (Disponibilidad $disponibilidad): array {
             $asesoria = $disponibilidad->asesorias->first();
             $alumno = $asesoria?->alumno;
             $usuario = $alumno?->usuario;
@@ -126,7 +121,6 @@ class ProfesorDisponibilidadController extends Controller
         return view('Profesor.disponibilidades', compact(
             'blocksBySlot',
             'calendarBlocks',
-            'disponibilidades',
             'hours',
             'weekDays',
             'weekEnd',

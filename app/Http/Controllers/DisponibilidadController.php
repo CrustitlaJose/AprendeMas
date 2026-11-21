@@ -48,7 +48,7 @@ class DisponibilidadController extends Controller
             }
         });
 
-        return redirect()->route('profesor.disponibilidades.index')
+        return redirect()->route('profesor.disponibilidades.index', ['semana' => $fechas[0]])
             ->with('status', count($fechas) === 1
                 ? 'La disponibilidad se registró correctamente.'
                 : count($fechas).' disponibilidades semanales se registraron correctamente.');
@@ -62,11 +62,14 @@ class DisponibilidadController extends Controller
             ->firstOrFail();
         $this->validarEditable($disponibilidad);
 
+        $week = $request->validate([
+            'semana' => ['sometimes', 'date_format:Y-m-d'],
+        ])['semana'] ?? null;
         $validated = $request->validate($this->reglasDisponibilidad());
         $this->validarTraslape($profesor, $validated, $disponibilidad->id_disponibilidad);
         $disponibilidad->fill($validated)->save();
 
-        return redirect()->route('profesor.disponibilidades.index')
+        return redirect()->route('profesor.disponibilidades.index', $week === null ? [] : ['semana' => $week])
             ->with('status', 'La disponibilidad se actualizó correctamente.');
     }
 

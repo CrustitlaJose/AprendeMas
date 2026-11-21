@@ -194,6 +194,35 @@
                         Este bloque está ocupado, pero no tiene una asesoría confirmada asociada.
                     </p>
 
+                    <template x-if="selectedBlock && selectedBlock.estado === 'Disponible' && ! selectedBlock.asesoria">
+                        <form method="POST" :action="updateAction" class="space-y-3 rounded-lg border border-gray-200 p-4">
+                            @csrf
+                            @method('PUT')
+                            <input type="hidden" name="semana" :value="selectedBlock.fecha">
+                            <h3 class="font-semibold text-gray-900">Editar disponibilidad</h3>
+                            <label class="block text-sm font-medium text-gray-700">
+                                Fecha
+                                <input type="date" name="fecha" x-model="selectedBlock.fecha" min="{{ now()->toDateString() }}" required class="mt-1 w-full rounded-lg border border-gray-300 px-3 py-2">
+                            </label>
+                            <label class="block text-sm font-medium text-gray-700">
+                                Hora de inicio
+                                <input type="time" name="hora_inicio" x-model="selectedBlock.hora_inicio" required class="mt-1 w-full rounded-lg border border-gray-300 px-3 py-2">
+                            </label>
+                            <label class="block text-sm font-medium text-gray-700">
+                                Hora de fin
+                                <input type="time" name="hora_fin" x-model="selectedBlock.hora_fin" required class="mt-1 w-full rounded-lg border border-gray-300 px-3 py-2">
+                            </label>
+                            <label class="block text-sm font-medium text-gray-700">
+                                Modalidad
+                                <select name="modalidad" x-model="selectedBlock.modalidad" required class="mt-1 w-full rounded-lg border border-gray-300 px-3 py-2">
+                                    <option value="Presencial">Presencial</option>
+                                    <option value="Virtual">Virtual</option>
+                                </select>
+                            </label>
+                            <button type="submit" class="w-full rounded-lg bg-[#1F4E78] px-4 py-2 text-sm font-semibold text-white transition hover:bg-[#193f61]">Guardar cambios</button>
+                        </form>
+                    </template>
+
                     <button
                         type="button"
                         x-cloak
@@ -234,76 +263,6 @@
             </section>
         </div>
     </section>
-
-    <section class="space-y-4" aria-labelledby="availability-list-title">
-        <div class="flex flex-wrap items-end justify-between gap-3">
-            <div>
-                <h2 id="availability-list-title" class="text-xl font-semibold text-gray-900">Disponibilidades registradas</h2>
-                <p class="mt-1 text-sm text-gray-600">{{ $disponibilidades->count() }} bloques</p>
-            </div>
-        </div>
-        @forelse ($disponibilidades as $disponibilidad)
-            @php($formId = 'disponibilidad-'.$disponibilidad->id_disponibilidad)
-            <details class="rounded-xl border border-gray-200 bg-white shadow-sm" @if (old('_form') === $formId) open @endif>
-                <summary class="flex cursor-pointer flex-wrap items-center justify-between gap-3 px-5 py-4">
-                    <span class="font-semibold text-gray-900">
-                        {{ $disponibilidad->fecha }} · {{ substr((string) $disponibilidad->hora_inicio, 0, 5) }}–{{ substr((string) $disponibilidad->hora_fin, 0, 5) }}
-                    </span>
-                    <span @class([
-                        'rounded-full px-3 py-1 text-xs font-semibold',
-                        'bg-green-50 text-green-800' => $disponibilidad->estado === 'Disponible',
-                        'bg-amber-50 text-amber-800' => $disponibilidad->estado === 'Ocupado',
-                        'bg-gray-100 text-gray-700' => $disponibilidad->estado === 'Eliminado',
-                    ])>{{ $disponibilidad->estado }}</span>
-                </summary>
-
-                @if ($disponibilidad->estado === 'Disponible' && $disponibilidad->asesorias->where('estado', 'Confirmada')->isEmpty())
-                    <form action="{{ route('profesor.disponibilidades.update', $disponibilidad->id_disponibilidad) }}" method="POST" class="grid gap-4 border-t border-gray-100 p-5 sm:grid-cols-2 lg:grid-cols-4">
-                        @csrf
-                        @method('PUT')
-                        <input type="hidden" name="_form" value="{{ $formId }}">
-                        <label class="text-sm font-medium text-gray-700">
-                            Fecha
-                            <input type="date" name="fecha" value="{{ old('_form') === $formId ? old('fecha') : $disponibilidad->fecha }}" min="{{ now()->toDateString() }}" required class="mt-1 w-full rounded-lg border border-gray-300 px-3 py-2">
-                        </label>
-                        <label class="text-sm font-medium text-gray-700">
-                            Hora de inicio
-                            <input type="time" name="hora_inicio" value="{{ old('_form') === $formId ? old('hora_inicio') : substr((string) $disponibilidad->hora_inicio, 0, 5) }}" required class="mt-1 w-full rounded-lg border border-gray-300 px-3 py-2">
-                        </label>
-                        <label class="text-sm font-medium text-gray-700">
-                            Hora de fin
-                            <input type="time" name="hora_fin" value="{{ old('_form') === $formId ? old('hora_fin') : substr((string) $disponibilidad->hora_fin, 0, 5) }}" required class="mt-1 w-full rounded-lg border border-gray-300 px-3 py-2">
-                        </label>
-                        <label class="text-sm font-medium text-gray-700">
-                            Modalidad
-                            <select name="modalidad" required class="mt-1 w-full rounded-lg border border-gray-300 px-3 py-2">
-                                <option value="Presencial" @selected((old('_form') === $formId ? old('modalidad') : $disponibilidad->modalidad) === 'Presencial')>Presencial</option>
-                                <option value="Virtual" @selected((old('_form') === $formId ? old('modalidad') : $disponibilidad->modalidad) === 'Virtual')>Virtual</option>
-                            </select>
-                        </label>
-                        <div class="flex flex-wrap gap-3 sm:col-span-2 lg:col-span-4">
-                            <button type="submit" class="rounded-lg bg-[#1F4E78] px-4 py-2 text-sm font-semibold text-white transition hover:bg-[#193f61]">Guardar cambios</button>
-                        </div>
-                    </form>
-                    <form action="{{ route('profesor.disponibilidades.destroy', $disponibilidad->id_disponibilidad) }}" method="POST" class="border-t border-gray-100 px-5 py-4" data-confirm-title="¿Eliminar esta disponibilidad?" data-confirm-message="Este bloque dejará de estar disponible para los alumnos." data-confirm-label="Sí, eliminar disponibilidad">
-                        @csrf
-                        @method('DELETE')
-                        <button type="submit" class="text-sm font-semibold text-red-700 hover:text-red-800">Eliminar disponibilidad</button>
-                    </form>
-                @else
-                    <p class="border-t border-gray-100 px-5 py-4 text-sm text-gray-600">
-                        @if ($disponibilidad->estado === 'Eliminado')
-                            Esta disponibilidad fue eliminada y se conserva como registro histórico.
-                        @else
-                            Este horario ya está ocupado o asociado a una asesoría y no se puede modificar ni eliminar.
-                        @endif
-                    </p>
-                @endif
-            </details>
-        @empty
-            <p class="rounded-xl border border-dashed border-gray-300 bg-white p-8 text-center text-sm text-gray-600">Aún no tienes disponibilidades registradas.</p>
-        @endforelse
-    </section>
 </div>
 <style>
     [x-cloak] {
@@ -318,6 +277,7 @@
             selectedBlock: null,
             deleteModalOpen: false,
             deleteRouteTemplate: {{ Illuminate\Support\Js::from(route('profesor.disponibilidades.destroy', ['disponibilidad' => '__BLOCK_ID__'])) }},
+            updateRouteTemplate: {{ Illuminate\Support\Js::from(route('profesor.disponibilidades.update', ['disponibilidad' => '__BLOCK_ID__'])) }},
             selectBlock(id) {
                 this.selectedBlock = this.blocks.find((block) => block.id === id) || null;
                 this.deleteModalOpen = false;
@@ -326,6 +286,11 @@
                 return this.selectedBlock
                     ? this.deleteRouteTemplate.replace('__BLOCK_ID__', String(this.selectedBlock.id))
                     : this.deleteRouteTemplate;
+            },
+            get updateAction() {
+                return this.selectedBlock
+                    ? this.updateRouteTemplate.replace('__BLOCK_ID__', String(this.selectedBlock.id))
+                    : this.updateRouteTemplate;
             },
         };
     };

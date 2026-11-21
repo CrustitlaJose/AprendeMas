@@ -114,8 +114,9 @@ class DisponibilidadManagementTest extends TestCase
             ->assertSee('Horario semanal')
             ->assertSee('Semana anterior')
             ->assertSee('Semana siguiente')
-            ->assertSee('Disponibilidades registradas')
-            ->assertSee('2 bloques')
+            ->assertSee('09:00–10:00')
+            ->assertSee('10:00–11:00')
+            ->assertDontSee('Disponibilidades registradas')
             ->assertSee('Selecciona un bloque en el horario semanal para consultar su información')
             ->assertSee('Eliminar bloque libre')
             ->assertSee('¿Eliminar este bloque libre?');
@@ -161,7 +162,7 @@ class DisponibilidadManagementTest extends TestCase
                 'repeticion' => 'unica',
                 'estado' => 'Ocupado',
             ])
-            ->assertRedirect(route('profesor.disponibilidades.index'))
+            ->assertRedirect(route('profesor.disponibilidades.index', ['semana' => '2030-01-02']))
             ->assertSessionHas('status', 'La disponibilidad se registró correctamente.');
 
         $this->assertDatabaseHas('disponibilidad', [
@@ -186,7 +187,7 @@ class DisponibilidadManagementTest extends TestCase
                 'modalidad' => 'Virtual',
                 'repeticion' => 'semanal',
             ])
-            ->assertRedirect(route('profesor.disponibilidades.index'))
+            ->assertRedirect(route('profesor.disponibilidades.index', ['semana' => '2030-01-02']))
             ->assertSessionHas('status', '4 disponibilidades semanales se registraron correctamente.');
 
         foreach (['2030-01-02', '2030-01-09', '2030-01-16', '2030-01-23'] as $fecha) {
@@ -404,8 +405,8 @@ class DisponibilidadManagementTest extends TestCase
         $this->actingAs($profesorUsuario)
             ->get(route('profesor.disponibilidades.index', ['semana' => '2030-01-02']))
             ->assertOk()
-            ->assertSee('Guardar cambios')
-            ->assertSee('Eliminar disponibilidad')
+            ->assertSee('Editar disponibilidad')
+            ->assertSee('Eliminar bloque libre')
             ->assertDontSee('Este horario ya está ocupado o asociado a una asesoría y no se puede modificar ni eliminar.');
 
         $this->put(route('profesor.disponibilidades.update', $disponibilidad->id_disponibilidad), [
@@ -519,7 +520,7 @@ class DisponibilidadManagementTest extends TestCase
                 'modalidad' => 'Presencial',
                 'repeticion' => 'unica',
             ])
-            ->assertRedirect(route('profesor.disponibilidades.index'))
+            ->assertRedirect(route('profesor.disponibilidades.index', ['semana' => '2030-01-02']))
             ->assertSessionHas('status', 'La disponibilidad se registró correctamente.');
 
         $this->assertDatabaseHas('disponibilidad', [
