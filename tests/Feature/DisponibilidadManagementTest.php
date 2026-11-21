@@ -31,21 +31,21 @@ class DisponibilidadManagementTest extends TestCase
         Disponibilidad::create([
             'id_profesor' => $otroProfesor->profesor()->firstOrFail()->id_profesor,
             'fecha' => '2030-01-03',
-            'hora_inicio' => '09:00',
-            'hora_fin' => '10:00',
+            'hora_inicio' => '11:00',
+            'hora_fin' => '12:00',
             'modalidad' => 'Virtual',
             'estado' => 'Disponible',
         ]);
 
         $this->actingAs($profesor)
-            ->get(route('profesor.disponibilidades.index', ['semana' => '2030-01-02']))
+            ->get(route('profesor.disponibilidades.index', ['mes' => '2030-01']))
             ->assertOk()
             ->assertViewIs('Profesor.disponibilidades')
-            ->assertSee('2030-01-02')
-            ->assertDontSee('2030-01-03');
+            ->assertSee('09:00–10:00')
+            ->assertDontSee('11:00–12:00');
     }
 
-    public function test_professor_can_view_weekly_calendar_with_related_appointment_details(): void
+    public function test_professor_can_view_monthly_calendar_with_related_appointment_details(): void
     {
         $profesorUsuario = $this->crearProfesor('profesor@example.com');
         $profesor = $profesorUsuario->profesor()->firstOrFail();
@@ -113,28 +113,37 @@ class DisponibilidadManagementTest extends TestCase
             'modalidad' => 'Virtual',
             'estado' => 'Disponible',
         ]);
+        Disponibilidad::create([
+            'id_profesor' => $profesor->id_profesor,
+            'fecha' => '2030-01-20',
+            'hora_inicio' => '13:00',
+            'hora_fin' => '14:00',
+            'modalidad' => 'Virtual',
+            'estado' => 'Disponible',
+        ]);
 
         $response = $this->actingAs($profesorUsuario)
-            ->get(route('profesor.disponibilidades.index', ['semana' => '2030-01-02']));
+            ->get(route('profesor.disponibilidades.index', ['mes' => '2030-01']));
 
         $response->assertOk()
             ->assertViewIs('Profesor.disponibilidades')
-            ->assertSee('Horario semanal')
-            ->assertSee('Semana anterior')
-            ->assertSee('Semana siguiente')
-            ->assertSee('Domingo')
+            ->assertSee('Calendario mensual')
+            ->assertSee('Mes anterior')
+            ->assertSee('Mes siguiente')
             ->assertSee('09:00–10:00')
             ->assertSee('10:00–11:00')
             ->assertSee('11:00–12:00')
+            ->assertSee('13:00–14:00')
+            ->assertSee('data-date="2030-01-20"', false)
             ->assertDontSee('Disponibilidades registradas')
-            ->assertSee('Selecciona un bloque en el horario semanal para consultar su información')
+            ->assertSee('Selecciona un bloque en el calendario para consultar su información')
             ->assertSee('Eliminar bloque libre')
             ->assertSee('¿Eliminar este bloque libre?');
-        $this->assertSame('2029-12-31', $response->viewData('weekStart')->toDateString());
-        $this->assertSame('2030-01-06', $response->viewData('weekEnd')->toDateString());
+        $this->assertSame('2030-01-01', $response->viewData('monthStart')->toDateString());
+        $this->assertSame('2030-01-31', $response->viewData('monthEnd')->toDateString());
 
         $calendarBlocks = $response->viewData('calendarBlocks');
-        $this->assertCount(3, $calendarBlocks);
+        $this->assertCount(4, $calendarBlocks);
         $this->assertSame(true, $calendarBlocks[0]['ocupada']);
         $this->assertSame('Laura García Pérez', $calendarBlocks[0]['asesoria']['alumno']['nombre_completo']);
         $this->assertSame('alumna@example.com', $calendarBlocks[0]['asesoria']['alumno']['correo']);
@@ -172,7 +181,7 @@ class DisponibilidadManagementTest extends TestCase
                 'repeticion' => 'unica',
                 'estado' => 'Ocupado',
             ])
-            ->assertRedirect(route('profesor.disponibilidades.index', ['semana' => '2030-01-02']))
+            ->assertRedirect(route('profesor.disponibilidades.index', ['mes' => '2030-01']))
             ->assertSessionHas('status', 'La disponibilidad se registró correctamente.');
 
         $this->assertDatabaseHas('disponibilidad', [
@@ -197,7 +206,7 @@ class DisponibilidadManagementTest extends TestCase
                 'modalidad' => 'Virtual',
                 'repeticion' => 'semanal',
             ])
-            ->assertRedirect(route('profesor.disponibilidades.index', ['semana' => '2030-01-02']))
+            ->assertRedirect(route('profesor.disponibilidades.index', ['mes' => '2030-01']))
             ->assertSessionHas('status', '4 disponibilidades semanales se registraron correctamente.');
 
         foreach (['2030-01-02', '2030-01-09', '2030-01-16', '2030-01-23'] as $fecha) {
@@ -413,7 +422,7 @@ class DisponibilidadManagementTest extends TestCase
         ]);
 
         $this->actingAs($profesorUsuario)
-            ->get(route('profesor.disponibilidades.index', ['semana' => '2030-01-02']))
+            ->get(route('profesor.disponibilidades.index', ['mes' => '2030-01']))
             ->assertOk()
             ->assertSee('Editar disponibilidad')
             ->assertSee('Eliminar bloque libre')
@@ -530,7 +539,7 @@ class DisponibilidadManagementTest extends TestCase
                 'modalidad' => 'Presencial',
                 'repeticion' => 'unica',
             ])
-            ->assertRedirect(route('profesor.disponibilidades.index', ['semana' => '2030-01-02']))
+            ->assertRedirect(route('profesor.disponibilidades.index', ['mes' => '2030-01']))
             ->assertSessionHas('status', 'La disponibilidad se registró correctamente.');
 
         $this->assertDatabaseHas('disponibilidad', [

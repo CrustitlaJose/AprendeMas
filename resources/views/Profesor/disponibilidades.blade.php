@@ -73,64 +73,56 @@
         </form>
     </details>
 
-    <section x-data="teacherCalendar()" @keydown.escape.window="deleteModalOpen = false" class="space-y-4" aria-labelledby="weekly-calendar-title">
+    <section x-data="teacherCalendar()" @keydown.escape.window="deleteModalOpen = false" class="space-y-4" aria-labelledby="monthly-calendar-title">
         <div class="flex flex-wrap items-end justify-between gap-3">
             <div>
-                <h2 id="weekly-calendar-title" class="text-xl font-semibold text-gray-900">Horario semanal</h2>
-                <p class="mt-1 text-sm text-gray-600">{{ $weekStart->format('d/m/Y') }} – {{ $weekEnd->format('d/m/Y') }}</p>
+                <h2 id="monthly-calendar-title" class="text-xl font-semibold text-gray-900">Calendario mensual</h2>
+                <p class="mt-1 text-sm text-gray-600">{{ $monthStart->format('m/Y') }}</p>
             </div>
             <div class="flex flex-wrap items-center gap-4">
                 <div class="flex flex-wrap gap-4 text-xs text-gray-600" aria-label="Leyenda del horario">
                     <span class="inline-flex items-center gap-2"><span class="h-3 w-3 rounded-sm bg-blue-600"></span>Ocupada</span>
                     <span class="inline-flex items-center gap-2"><span class="h-3 w-3 rounded-sm bg-gray-300"></span>Disponible</span>
                 </div>
-                <nav class="flex items-center gap-2" aria-label="Cambiar semana">
-                    <a href="{{ route('profesor.disponibilidades.index', ['semana' => $weekStart->subWeek()->toDateString()]) }}" class="rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm font-semibold text-gray-700 transition hover:bg-gray-50">Semana anterior</a>
-                    <a href="{{ route('profesor.disponibilidades.index', ['semana' => $weekStart->addWeek()->toDateString()]) }}" class="rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm font-semibold text-gray-700 transition hover:bg-gray-50">Semana siguiente</a>
+                <nav class="flex items-center gap-2" aria-label="Cambiar mes">
+                    <a href="{{ route('profesor.disponibilidades.index', ['mes' => $monthStart->subMonth()->format('Y-m')]) }}" class="rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm font-semibold text-gray-700 transition hover:bg-gray-50">Mes anterior</a>
+                    <a href="{{ route('profesor.disponibilidades.index', ['mes' => $monthStart->addMonth()->format('Y-m')]) }}" class="rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm font-semibold text-gray-700 transition hover:bg-gray-50">Mes siguiente</a>
                 </nav>
             </div>
         </div>
 
-        <div class="grid gap-6 lg:grid-cols-[minmax(0,2fr)_minmax(18rem,1fr)]">
-            <section class="min-w-0 overflow-hidden rounded-xl border border-gray-200 bg-white shadow-sm" aria-label="Tabla de horario semanal">
+        <div class="grid gap-6 xl:grid-cols-[minmax(0,1fr)_20rem]">
+            <section class="min-w-0 overflow-hidden rounded-xl border border-gray-200 bg-white shadow-sm" aria-label="Calendario mensual de disponibilidades">
                 <div class="overflow-x-auto">
-                    <div class="min-w-[900px]">
-                        <div class="grid grid-cols-8 border-b border-gray-200 bg-gray-50">
-                            <div class="px-3 py-4 text-xs font-semibold uppercase tracking-wide text-gray-500">Hora</div>
-                            @foreach ($weekDays as $day)
-                                <div class="border-l border-gray-200 px-2 py-3 text-center">
-                                    <p class="text-sm font-semibold text-gray-800">{{ $day['nombre'] }}</p>
-                                    <p class="mt-1 text-xs text-gray-500">{{ $day['fecha_corta'] }}</p>
+                    <div class="grid min-w-[700px] grid-cols-7 gap-px bg-gray-200">
+                        @foreach ($weekdayNames as $weekdayName)
+                            <div class="bg-gray-50 px-2 py-3 text-center text-xs font-semibold text-gray-600 sm:text-sm">{{ $weekdayName }}</div>
+                        @endforeach
+                        @foreach ($calendarDays as $day)
+                            <section @class([
+                                'min-h-32 space-y-2 p-2',
+                                'bg-white' => $day['mes_actual'],
+                                'bg-gray-50 text-gray-400' => ! $day['mes_actual'],
+                            ]) data-date="{{ $day['fecha'] }}">
+                                <p class="text-right text-sm font-semibold">{{ $day['dia'] }}</p>
+                                <div class="space-y-1">
+                                    @foreach ($day['bloques'] as $block)
+                                        <button
+                                            type="button"
+                                            @click="selectBlock({{ $block['id'] }})"
+                                            aria-label="Ver disponibilidad del {{ $day['fecha'] }} de {{ $block['hora_inicio'] }} a {{ $block['hora_fin'] }}"
+                                            @class([
+                                                'flex w-full flex-col rounded-md border-l-4 px-2 py-1 text-left text-xs transition focus:outline-none focus:ring-2 focus:ring-[#1e3a5f] focus:ring-offset-1',
+                                                'border-blue-800 bg-blue-100 text-blue-900 hover:bg-blue-200' => $block['ocupada'],
+                                                'border-gray-500 bg-gray-200 text-gray-800 hover:bg-gray-300' => ! $block['ocupada'],
+                                            ])
+                                        >
+                                            <span class="font-bold">{{ $block['hora_inicio'] }}–{{ $block['hora_fin'] }}</span>
+                                            <span class="truncate">{{ $block['ocupada'] ? ($block['asesoria']['alumno']['nombre_completo'] ?? 'Ocupada') : 'Disponible' }}</span>
+                                        </button>
+                                    @endforeach
                                 </div>
-                            @endforeach
-                        </div>
-
-                        @foreach ($hours as $hour)
-                            <div class="grid grid-cols-8">
-                                <div class="min-h-20 border-b border-gray-200 bg-gray-50 px-2 py-2 text-xs font-medium text-gray-500">{{ sprintf('%02d:00', $hour) }}</div>
-                                @foreach ($weekDays as $day)
-                                    @php($slotBlocks = $blocksBySlot[$day['fecha']][$hour] ?? [])
-                                    <div class="min-h-20 space-y-1 border-b border-l border-gray-200 p-1">
-                                        @forelse ($slotBlocks as $block)
-                                            <button
-                                                type="button"
-                                                @click="selectBlock({{ $block['id'] }})"
-                                                aria-label="Ver disponibilidad del {{ $day['nombre'] }} de {{ $block['hora_inicio'] }} a {{ $block['hora_fin'] }}"
-                                                @class([
-                                                    'flex w-full flex-col rounded-md border-l-4 px-2 py-2 text-left text-xs transition focus:outline-none focus:ring-2 focus:ring-[#1e3a5f] focus:ring-offset-1',
-                                                    'border-blue-800 bg-blue-600 text-white hover:bg-blue-700' => $block['ocupada'],
-                                                    'border-gray-500 bg-gray-200 text-gray-800 hover:bg-gray-300' => ! $block['ocupada'],
-                                                ])
-                                            >
-                                                <span class="font-bold">{{ $block['hora_inicio'] }}–{{ $block['hora_fin'] }}</span>
-                                                <span class="mt-1 truncate">{{ $block['ocupada'] ? ($block['asesoria']['alumno']['nombre_completo'] ?? 'Ocupada') : 'Disponible' }}</span>
-                                            </button>
-                                        @empty
-                                            <span class="block h-full min-h-16 rounded-md" aria-hidden="true"></span>
-                                        @endforelse
-                                    </div>
-                                @endforeach
-                            </div>
+                            </section>
                         @endforeach
                     </div>
                 </div>
@@ -140,7 +132,7 @@
                 <h2 id="appointment-details-title" class="text-lg font-semibold text-gray-900">Panel de detalles</h2>
 
                 <div x-show="! selectedBlock" class="flex min-h-56 items-center justify-center rounded-lg border border-dashed border-gray-300 bg-gray-50 px-6 text-center">
-                    <p class="text-sm leading-6 text-gray-500">Selecciona un bloque en el horario semanal para consultar su información</p>
+                    <p class="text-sm leading-6 text-gray-500">Selecciona un bloque en el calendario para consultar su información</p>
                 </div>
 
                 <div x-cloak x-show="selectedBlock" class="mt-4 space-y-4">
@@ -198,7 +190,7 @@
                         <form method="POST" :action="updateAction" class="space-y-3 rounded-lg border border-gray-200 p-4">
                             @csrf
                             @method('PUT')
-                            <input type="hidden" name="semana" :value="selectedBlock.fecha">
+                            <input type="hidden" name="mes" :value="selectedBlock.fecha.substring(0, 7)">
                             <h3 class="font-semibold text-gray-900">Editar disponibilidad</h3>
                             <label class="block text-sm font-medium text-gray-700">
                                 Fecha
@@ -256,7 +248,7 @@
                     <form method="POST" :action="deleteAction">
                         @csrf
                         @method('DELETE')
-                        <input type="hidden" name="semana" value="{{ $weekStart->toDateString() }}">
+                        <input type="hidden" name="mes" value="{{ $monthStart->format('Y-m') }}">
                         <button type="submit" class="w-full rounded-lg bg-red-600 px-4 py-2 text-sm font-semibold text-white hover:bg-red-700 sm:w-auto">Sí, eliminar bloque</button>
                     </form>
                 </div>

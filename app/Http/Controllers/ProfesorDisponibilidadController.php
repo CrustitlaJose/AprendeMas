@@ -21,14 +21,16 @@ class ProfesorDisponibilidadController extends Controller
     public function calendar(Request $request): View
     {
         $validated = $request->validate([
-            'semana' => ['sometimes', 'date_format:Y-m-d'],
+            'mes' => ['sometimes', 'date_format:Y-m'],
         ]);
-        $weekStart = CarbonImmutable::parse($validated['semana'] ?? today()->toDateString())
-            ->startOfWeek(CarbonImmutable::MONDAY);
-        $weekEnd = $weekStart->addDays(6);
+        $monthStart = CarbonImmutable::parse(($validated['mes'] ?? today()->format('Y-m')).'-01')
+            ->startOfMonth();
+        $monthEnd = $monthStart->endOfMonth();
+        $calendarStart = $monthStart->startOfWeek(CarbonImmutable::MONDAY);
+        $calendarEnd = $monthEnd->endOfWeek(CarbonImmutable::SUNDAY);
         $profesor = $this->profesorFrom($request);
         $disponibilidades = $profesor->disponibilidad()
-            ->whereBetween('fecha', [$weekStart->toDateString(), $weekEnd->toDateString()])
+            ->whereBetween('fecha', [$calendarStart->toDateString(), $calendarEnd->toDateString()])
             ->with(['asesorias' => static function (Builder|Relation $query): void {
                 $query->where('estado', 'Confirmada')
                     ->with(['alumno.usuario', 'materia', 'aula']);
@@ -37,17 +39,7 @@ class ProfesorDisponibilidadController extends Controller
             ->orderBy('hora_inicio')
             ->get();
 
-        $nombresDias = ['Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado', 'Domingo'];
-        $weekDays = [];
-
-        foreach ($nombresDias as $offset => $nombreDia) {
-            $fecha = $weekStart->addDays($offset);
-            $weekDays[] = [
-                'fecha' => $fecha->toDateString(),
-                'nombre' => $nombreDia,
-                'fecha_corta' => $fecha->format('d/m'),
-            ];
-        }
+        $weekdayNames = ['Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado', 'Domingo'];
 
         $calendarBlocks = $disponibilidades->map(static function (Disponibilidad $disponibilidad): array {
             $asesoria = $disponibilidad->asesorias->first();
@@ -57,15 +49,12 @@ class ProfesorDisponibilidadController extends Controller
             $aula = $asesoria?->aula;
             $horaInicio = substr((string) $disponibilidad->hora_inicio, 0, 5);
             $horaFin = substr((string) $disponibilidad->hora_fin, 0, 5);
-            $horaFinEntera = (int) substr($horaFin, 0, 2) + ((int) substr($horaFin, 3, 2) > 0 ? 1 : 0);
 
             return [
                 'id' => (int) $disponibilidad->id_disponibilidad,
                 'fecha' => (string) $disponibilidad->fecha,
                 'hora_inicio' => $horaInicio,
                 'hora_fin' => $horaFin,
-                'hora_inicio_entera' => (int) substr($horaInicio, 0, 2),
-                'hora_fin_entera' => $horaFinEntera,
                 'modalidad' => $disponibilidad->modalidad,
                 'estado' => $disponibilidad->estado,
                 'ocupada' => $asesoria !== null || $disponibilidad->estado !== 'Disponible',
@@ -108,23 +97,30 @@ class ProfesorDisponibilidadController extends Controller
             ];
         })->values()->all();
 
-        $blocksBySlot = [];
+        $blocksByDate = [];
 
         foreach ($calendarBlocks as $calendarBlock) {
-            $blocksBySlot[$calendarBlock['fecha']][$calendarBlock['hora_inicio_entera']][] = $calendarBlock;
+            $blocksByDate[$calendarBlock['fecha']][] = $calendarBlock;
         }
 
-        $hoursStart = $calendarBlocks === [] ? 8 : min(array_column($calendarBlocks, 'hora_inicio_entera'));
-        $hoursEnd = $calendarBlocks === [] ? 20 : max(array_column($calendarBlocks, 'hora_fin_entera'));
-        $hours = range($hoursStart, max($hoursStart + 1, $hoursEnd) - 1);
+        $calendarDays = [];
+
+        for ($date = $calendarStart; $date->lessThanOrEqualTo($calendarEnd); $date = $date->addDay()) {
+            $dateString = $date->toDateString();
+            $calendarDays[] = [
+                'fecha' => $dateString,
+                'dia' => $date->format('j'),
+                'mes_actual' => $date->format('Y-m') === $monthStart->format('Y-m'),
+                'bloques' => $blocksByDate[$dateString] ?? [],
+            ];
+        }
 
         return view('Profesor.disponibilidades', compact(
-            'blocksBySlot',
             'calendarBlocks',
-            'hours',
-            'weekDays',
-            'weekEnd',
-            'weekStart',
+            'calendarDays',
+            'monthEnd',
+            'monthStart',
+            'weekdayNames',
         ));
     }
 
